@@ -15,12 +15,12 @@ require('electron-debug')({ showDevTools: true })
 
 // Install `vue-devtools`
 require('electron').app.on('ready', () => {
-  let installExtension = require('electron-devtools-installer')
-  installExtension.default(installExtension.VUEJS_DEVTOOLS)
-    .then(() => { })
-    .catch(err => {
-      console.log('Unable to install `vue-devtools`: \n', err)
-    })
+	let installExtension = require('electron-devtools-installer')
+	installExtension.default(installExtension.VUEJS_DEVTOOLS)
+		.then(() => { })
+		.catch(err => {
+			console.log('Unable to install `vue-devtools`: \n', err)
+		})
 })
 
 // Require `main` process to boot app
@@ -29,12 +29,22 @@ require('./index')
 const ipcMain = require('electron').ipcMain
 const dialog = require('electron').dialog
 
-ipcMain.on('open-file-dialog', function (event) {
-  dialog.showOpenDialog({
-    properties: ['openFile', 'openDirectory']
-  }, function (files) {
-    // if (files) {
-    event.sender.send('selected-directory', files);
-    // }
-  })
+ipcMain.on('open_client_project_path', function (event) {
+	dialog.showOpenDialog({
+		properties: ['openFile', 'openDirectory']
+	}, function (files) {
+		event.sender.send('selected_client_project_path', files);
+	})
 })
+
+ipcMain.on('open_client_proto_path', function (event) {
+	dialog.showOpenDialog({
+		properties: ['openFile', 'openDirectory']
+	}, function (files) {
+		event.sender.send('selected_client_proto_path', files);
+	})
+})
+
+global.sharedObject = {
+	client_project_path: ''
+}

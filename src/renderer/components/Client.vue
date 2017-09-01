@@ -9,13 +9,13 @@
             <div class="content-left">
                 <mu-list @change="handleListChange" :value="activeList">
                     <mu-list-item title="Module" value="ClientModule">
-                        <mu-icon slot="left" value="send" />
+                        <mu-icon slot="left" value="assignment" />
                     </mu-list-item>
-    
+
                     <mu-list-item title="Proto" value="ClientProto">
-                        <mu-icon slot="left" value="drafts" />
+                        <mu-icon slot="left" value="swap_vert" />
                     </mu-list-item>
-    
+
                     <mu-divider/>
                     <mu-list-item title="Setting" value="ClientSetting">
                         <mu-icon slot="left" value="build" />

@@ -46,6 +46,8 @@ module.exports = {
     //一行结束后面不要有空格
     "no-trailing-spaces": 0,
     //对象字面量中冒号的前后空格
-    "key-spacing": 0
+    "key-spacing": 0,
+    //中缀操作符周围要不要有空格
+    "space-infix-ops": 0,
   }
 }
