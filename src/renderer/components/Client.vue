@@ -34,7 +34,11 @@
     </div>
 </template>
 <script>
+const ipcRenderer = require('electron').ipcRenderer;
+const remote = require('electron').remote;
+
 export default {
+
     data () {
         return {
             activeList: 'ClientModule',
@@ -51,6 +55,22 @@ export default {
         "ClientModule": require('./Client/ClientModule'),
         "ClientProto": require('./Client/ClientProto'),
         "ClientSetting": require('./Client/ClientSetting')
+    },
+    mounted () {
+        var author = localStorage.getItem("client_author");
+        var project_path = localStorage.getItem("client_project_path");
+        var proto_path = localStorage.getItem("client_proto_path");
+        if (author) {
+            remote.getGlobal('sharedObject').client_author = author;
+        }
+        if (project_path) {
+            remote.getGlobal('sharedObject').client_project_path = project_path;
+        }
+        if (proto_path) {
+            remote.getGlobal('sharedObject').client_proto_path = proto_path;
+        }
+
+        ipcRenderer.send('client_init');
     }
 }
 </script>
@@ -109,7 +129,7 @@ export default {
 .body {
     background-color: white;
     border-radius: 5px;
-    min-height: 500px;
+    min-height: 860px;
 }
 
 .footer {
