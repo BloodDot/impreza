@@ -2,7 +2,7 @@
     <div class="layout">
         <div class="header">
             <div class="logo">
-                Muse-UI
+                Impreza
             </div>
         </div>
         <div class="content">
@@ -31,6 +31,8 @@
         <div class="footer">
             Muse-UI ©2017 Created by Muse-UI
         </div>
+
+        <mu-toast v-if="toast" :message="toastContent" @close="hideToast" />
     </div>
 </template>
 <script>
@@ -42,13 +44,27 @@ export default {
     data () {
         return {
             activeList: 'ClientModule',
-            currentView: "ClientModule"
+            currentView: "ClientModule",
+            toast: false,
+            toastContent: ""
         }
     },
     methods: {
         handleListChange (val) {
             this.activeList = val
             this.currentView = val
+        },
+        showToast (content = "") {
+            this.toastContent = content;
+            this.toast = true;
+            if (this.toastTimer) {
+                clearTimeout(this.toastTimer);
+            }
+            this.toastTimer = setTimeout(() => { this.toast = false }, 2000);
+        },
+        hideToast () {
+            this.toast = false;
+            if (this.toastTimer) clearTimeout(this.toastTimer);
         }
     },
     components: {
@@ -70,6 +86,12 @@ export default {
             remote.getGlobal('sharedObject').client_proto_path = proto_path;
         }
 
+        ipcRenderer.on('client_show_message', function (event, msg) {
+            this.showToast(msg);
+            console.log("recevice msg" + msg);
+        }.bind(this));
+
+        console.log("client inited");
         ipcRenderer.send('client_init');
     }
 }

@@ -23,7 +23,6 @@ const remote = require('electron').remote;
 export default {
     data () {
         return {
-            toast: false,
             client_author:"",
             client_project_path: "",
             client_proto_path:""

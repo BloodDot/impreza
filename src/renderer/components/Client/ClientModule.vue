@@ -18,8 +18,6 @@
             </mu-tbody>
         </mu-table>
 
-        <mu-toast v-if="toast" :message="toastContent" @close="hideToast" />
-
         <mu-dialog :open="dialog" title="创建模块" @close="hideDialog">
             <mu-content-block class="demo-raised-button-container">
                 <mu-text-field class="demo-text-field" label="请输入模块名称" hintText="模块名称" v-model="module_name" />
@@ -45,8 +43,6 @@ export default {
             module_name: "",
             module_cn_name: "",
 
-            toast: false,
-            toastContent: "",
             dialog: false,
 
 
@@ -62,18 +58,6 @@ export default {
         }
     },
     methods: {
-        showToast (content = "") {
-            this.toastContent = content;
-            this.toast = true;
-            if (this.toastTimer) {
-                clearTimeout(this.toastTimer);
-            }
-            this.toastTimer = setTimeout(() => { this.toast = false }, 2000);
-        },
-        hideToast () {
-            this.toast = false;
-            if (this.toastTimer) clearTimeout(this.toastTimer);
-        },
         showDialog () {
             this.dialog = true;
         },
@@ -84,18 +68,18 @@ export default {
         },
         createModule () {
             if (!this.module_name) {
-                this.showToast("模块名不能为空");
+                ipcRenderer.send('client_show_message', "模块名不能为空");
                 return;
             }
 
             if (!this.module_cn_name) {
-                this.showToast("模块中文名不能为空");
+                ipcRenderer.send('client_show_message', "模块中文名不能为空");
                 return;
             }
 
             for (var i = 0; i < this.tableData.length; i++) {
                 if (this.tableData[i].moduleName == this.module_name) {
-                    this.showToast("已存在该模块");
+                    ipcRenderer.send('client_show_message', "已存在该模块");
                     this.hideDialog();
                     return;
                 }

@@ -1,6 +1,7 @@
 'use strict'
 
-import { app, BrowserWindow } from 'electron'
+import { BrowserWindow, app } from 'electron'
+var client = require("./client");
 
 /**
  * Set `__static` path to static files in production
@@ -15,7 +16,7 @@ const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
 
-function createWindow () {
+function createWindow() {
   /**
    * Initial window options
    */
@@ -30,6 +31,8 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  client.init(mainWindow);
 }
 
 app.on('ready', createWindow)
