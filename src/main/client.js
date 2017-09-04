@@ -56,17 +56,21 @@ exports.init = function (mainWindow) {
         if (global.sharedObject.client_modules.length != 0) {
             return;
         }
+        if (!global.sharedObject.client_project_path) {
+            return
+        }
         refreshModules(event, 1);
     }.bind(this))
 
     ipcMain.on('client_module_refresh', function (event) {
-        global.sharedObject.client_modules.length == 0;
+        if (!global.sharedObject.client_project_path) {
+            return
+        }
         refreshModules(event, 2);
     }.bind(this))
 
     ipcMain.on('client_create_module', function (event, module_name, module_cn_name) {
         createModule(event, module_name, module_cn_name);
-        refreshModules(event, 2);
     }.bind(this));
 
     ipcMain.on('client_create_window', function (event, window_name, window_cn_name, window_module_name) {
@@ -78,12 +82,21 @@ exports.init = function (mainWindow) {
     }.bind(this));
 
     function refreshModules(event, type) {
+        switch (type) {
+            case 1:
+                break;
+            case 2:
+                global.sharedObject.client_modules = [];
+                break;
+            default:
+                break;
+        }
+
         fs.readFile(global.sharedObject.client_project_path + win2ctrl, 'utf8', function (err, data) {
             let datas = data.split("=");
             let datastr = replace(replace(removeSpaces(datas[1]), "\r", ""), "\n", "");
             datastr = substr(datastr, 1, datastr.length - 5);
             let modules = global.sharedObject.modules = datastr.split("},");
-
             for (let i = 0; i < modules.length; i++) {
                 let module = {};
 
@@ -133,13 +146,13 @@ exports.init = function (mainWindow) {
         let cpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/controller/" + toStudlyCaps(module_name) + "Controller.ts";
         if (fs.exists(cpath, function (exists) {
             if (exists) {
-                let msg = toStudlyCaps(module_name) + "Controller.ts" + "已存在!";
+                let msg = toStudlyCaps(module_name) + "Controller.ts" + "已存在";
                 mainWindow.webContents.send("client_show_message", msg);
             } else {
                 let ccontent = "import BController from '../../../../framework/mvc/controller/BController';\r\n\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "控制器\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n*/\r\n@ccclass\r\nexport default class " + toStudlyCaps(module_name) + "Controller extends BController {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n\r\n\tpublic static getClass() {\r\n\t\treturn this.constructor;\r\n\t}\r\n}";
                 fs.writeFile(cpath, ccontent, function (err) {
                     if (!err) {
-                        let msg = "创建" + toStudlyCaps(module_name) + "Controller.ts" + "成功!";
+                        let msg = "创建" + toStudlyCaps(module_name) + "Controller.ts" + "成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -151,13 +164,13 @@ exports.init = function (mainWindow) {
         let mpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/model/" + toStudlyCaps(module_name) + "Model.ts";
         if (fs.exists(mpath, function (exists) {
             if (exists) {
-                let msg = toStudlyCaps(module_name) + "Model.ts" + "已存在!";
+                let msg = toStudlyCaps(module_name) + "Model.ts" + "已存在";
                 mainWindow.webContents.send("client_show_message", msg);
             } else {
                 let mcontent = "import BModel from '../../../../framework/mvc/model/BModel'; \r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + " 数据模型\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + "  \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n */\r\nexport default class " + toStudlyCaps(module_name) + "Model extends BModel {\t\r\n\tpublic constructor() {\t\r\n\t\tsuper();\t\r\n\t}\r\n}";
                 fs.writeFile(mpath, mcontent, function (err) {
                     if (!err) {
-                        let msg = "创建" + toStudlyCaps(module_name) + "Model.ts" + "成功!";
+                        let msg = "创建" + toStudlyCaps(module_name) + "Model.ts" + "成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -168,13 +181,13 @@ exports.init = function (mainWindow) {
         let wpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/view/" + toStudlyCaps(module_name) + "Window.ts";
         if (fs.exists(wpath, function (exists) {
             if (exists) {
-                let msg = toStudlyCaps(module_name) + "Window.ts" + "已存在!";
+                let msg = toStudlyCaps(module_name) + "Window.ts" + "已存在";
                 mainWindow.webContents.send("client_show_message", msg);
             } else {
                 let wcontent = "import BWindow from '../../../../framework/mvc/view/BWindow';\r\n\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + " \r\n * @desc " + module_cn_name + " 窗体\r\n * @date " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n */\r\n@ccclass\r\nexport default class " + toStudlyCaps(module_name) + "Window extends BWindow {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n\r\n\tpublic show(data?: any): void {\r\n\t\tsuper.show();\r\n\t}\r\n\r\n\tpublic hide(data?: any): void {\r\n\t\tsuper.hide();\r\n\t}\r\n\r\n\tpublic onDestroy(): void {\r\n\t\tsuper.onDestroy();\r\n\t}\r\n}";
                 fs.writeFile(wpath, wcontent, function (err) {
                     if (!err) {
-                        let msg = "创建" + toStudlyCaps(module_name) + "Window.ts" + "成功!";
+                        let msg = "创建" + toStudlyCaps(module_name) + "Window.ts" + "成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -185,7 +198,7 @@ exports.init = function (mainWindow) {
         // let vcontent = '[\r\n  {\r\n    "__type__": "cc.Prefab",\r\n    "_name": "",\r\n    "_objFlags": 0,\r\n    "_rawFiles": null,\r\n    "data": {\r\n      "__id__": 1\r\n    }\r\n  },\r\n  {\r\n    "__type__": "cc.Node",\r\n    "_name": "' + toStudlyCaps(module_name) + 'WindowPrefab",\r\n    "_objFlags": 0,\r\n    "_parent": null,\r\n    "_children": [],\r\n    "_tag": -1,\r\n    "_active": true,\r\n    "_components": [],\r\n    "_prefab": {\r\n      "__id__": 2\r\n    },\r\n    "_id": "",\r\n    "_opacity": 255,\r\n    "_color": {\r\n      "__type__": "cc.Color",\r\n      "r": 255,\r\n      "g": 255,\r\n      "b": 255,\r\n      "a": 255\r\n    },\r\n    "_cascadeOpacityEnabled": true,\r\n    "_anchorPoint": {\r\n      "__type__": "cc.Vec2",\r\n      "x": 0.5,\r\n      "y": 0.5\r\n    },\r\n    "_contentSize": {\r\n      "__type__": "cc.Size",\r\n      "width": 0,\r\n      "height": 0\r\n    },\r\n    "_rotationX": 0,\r\n    "_rotationY": 0,\r\n    "_scaleX": 1,\r\n    "_scaleY": 1,\r\n    "_position": {\r\n      "__type__": "cc.Vec2",\r\n      "x": 0,\r\n      "y": 0\r\n    },\r\n    "_skewX": 0,\r\n    "_skewY": 0,\r\n    "_localZOrder": 0,\r\n    "_globalZOrder": 0,\r\n    "_opacityModifyRGB": false,\r\n    "groupIndex": 0\r\n  },\r\n  {\r\n    "__type__": "cc.PrefabInfo",\r\n    "root": {\r\n      "__id__": 1\r\n    },\r\n    "asset": {\r\n      "__id__": 0\r\n    },\r\n    "fileId": "",\r\n    "sync": false\r\n  }\r\n]';
         // fs.writeFileSync(global.sharedObject.client_project_path + "/assets/resources/prefabs/game/" + module_name + "/" + toStudlyCaps(module_name) + "WindowPrefab.prefab", vcontent, function (err) {
         // 	if (!err) {
-        // 		console.log("创建窗体预置体成功!");
+        // 		console.log("创建窗体预置体成功");
         // 	}
         // });
 
@@ -198,7 +211,7 @@ exports.init = function (mainWindow) {
 
                 fs.writeFile(mdpath, mdcontent, function (err) {
                     if (!err) {
-                        let msg = "修改ModuleConst成功!";
+                        let msg = "修改ModuleConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -214,7 +227,7 @@ exports.init = function (mainWindow) {
 
                 fs.writeFile(wcpath, wccontent, function (err) {
                     if (!err) {
-                        let msg = "修改WindowConst成功!";
+                        let msg = "修改WindowConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -231,7 +244,7 @@ exports.init = function (mainWindow) {
 
                 fs.writeFile(ccpath, cccontent, function (err) {
                     if (!err) {
-                        let msg = "修改CtrlConst成功!";
+                        let msg = "修改CtrlConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -249,12 +262,17 @@ exports.init = function (mainWindow) {
                 wcccontent = wcccontent + "\n\t];\n}";
                 fs.writeFile(wccpath, wcccontent, function (err) {
                     if (!err) {
-                        let msg = "修改Win2CtrlConst成功!";
+                        let msg = "修改Win2CtrlConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
             }
         });
+
+        //刷新模块列表
+        setTimeout(function () {
+            refreshModules(event, 2);
+        }, 500);
     }
 
     function createWindow(event, window_name, window_cn_name, window_module_name) {
@@ -264,13 +282,13 @@ exports.init = function (mainWindow) {
         let wpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + window_module_name + "/view/" + toStudlyCaps(window_name) + "Window.ts";
         if (fs.exists(wpath, function (exists) {
             if (exists) {
-                let msg = toStudlyCaps(window_name) + "Window.ts" + "已存在!";
+                let msg = toStudlyCaps(window_name) + "Window.ts" + "已存在";
                 mainWindow.webContents.send("client_show_message", msg);
             } else {
                 let wcontent = "import BWindow from '../../../../framework/mvc/view/BWindow';\r\n\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + " \r\n * @desc " + window_cn_name + " 窗体\r\n * @date " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n */\r\n@ccclass\r\nexport default class " + toStudlyCaps(window_name) + "Window extends BWindow {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n\r\n\tpublic show(data?: any): void {\r\n\t\tsuper.show();\r\n\t}\r\n\r\n\tpublic hide(data?: any): void {\r\n\t\tsuper.hide();\r\n\t}\r\n\r\n\tpublic onDestroy(): void {\r\n\t\tsuper.onDestroy();\r\n\t}\r\n}";
                 fs.writeFile(wpath, wcontent, function (err) {
                     if (!err) {
-                        let msg = "创建" + toStudlyCaps(window_name) + "Window.ts" + "成功!";
+                        let msg = "创建" + toStudlyCaps(window_name) + "Window.ts" + "成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -286,7 +304,7 @@ exports.init = function (mainWindow) {
 
                 fs.writeFile(wcpath, wccontent, function (err) {
                     if (!err) {
-                        let msg = "修改WindowConst成功!";
+                        let msg = "修改WindowConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
@@ -308,12 +326,17 @@ exports.init = function (mainWindow) {
                 wcccontent = "import " + toStudlyCaps(window_name) + "Window from '../module/" + window_module_name + "/view/" + toStudlyCaps(window_name) + "Window';\n" + wcccontent;
                 fs.writeFile(wccpath, wcccontent, function (err) {
                     if (!err) {
-                        let msg = "修改Win2CtrlConst成功!";
+                        let msg = "修改Win2CtrlConst成功";
                         mainWindow.webContents.send("client_show_message", msg);
                     }
                 });
             }
         });
+
+        //刷新模块列表
+        setTimeout(function () {
+            refreshModules(event, 2);
+        }, 500);
     }
 
     global.sharedObject = {

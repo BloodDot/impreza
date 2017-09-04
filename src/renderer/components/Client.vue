@@ -29,7 +29,7 @@
             </div>
         </div>
         <div class="footer">
-            Muse-UI ©2017 Created by Muse-UI
+            Impreza ©2017 Created by Muse-UI
         </div>
 
         <mu-toast v-if="toast" :message="toastContent" @close="hideToast" />
@@ -88,10 +88,8 @@ export default {
 
         ipcRenderer.on('client_show_message', function (event, msg) {
             this.showToast(msg);
-            console.log("recevice msg" + msg);
         }.bind(this));
 
-        console.log("client inited");
         ipcRenderer.send('client_init');
     }
 }
