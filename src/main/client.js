@@ -66,6 +66,11 @@ exports.init = function (mainWindow) {
 
     ipcMain.on('client_create_module', function (event, module_name, module_cn_name) {
         createModule(event, module_name, module_cn_name);
+        refreshModules(event, 2);
+    }.bind(this));
+
+    ipcMain.on('client_create_window', function (event, window_name, window_cn_name, window_module_name) {
+        createWindow(event, window_name, window_cn_name, window_module_name);
     }.bind(this));
 
     ipcMain.on('client_show_message', function (event, msg) {
@@ -242,6 +247,65 @@ exports.init = function (mainWindow) {
                 wcccontent = "import " + toStudlyCaps(module_name) + "Window from '../module/" + module_name + "/view/" + toStudlyCaps(module_name) + "Window';\n" + wcccontent;
                 wcccontent = wcccontent + "\n\t\t{\n\t\t\tmodule: ModuleConst." + module_name + ",\n\t\t\tctrl: CtrlConst." + toStudlyCaps(module_name) + "Controller,\n\t\t\twins: [\n\t\t\t\tWindowConst." + toStudlyCaps(module_name) + "Window\n\t\t\t]\n\t\t},";
                 wcccontent = wcccontent + "\n\t];\n}";
+                fs.writeFile(wccpath, wcccontent, function (err) {
+                    if (!err) {
+                        let msg = "修改Win2CtrlConst成功!";
+                        mainWindow.webContents.send("client_show_message", msg);
+                    }
+                });
+            }
+        });
+    }
+
+    function createWindow(event, window_name, window_cn_name, window_module_name) {
+        let author = global.sharedObject.client_author;
+
+        //----------创建窗体
+        let wpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + window_module_name + "/view/" + toStudlyCaps(window_name) + "Window.ts";
+        if (fs.exists(wpath, function (exists) {
+            if (exists) {
+                let msg = toStudlyCaps(window_name) + "Window.ts" + "已存在!";
+                mainWindow.webContents.send("client_show_message", msg);
+            } else {
+                let wcontent = "import BWindow from '../../../../framework/mvc/view/BWindow';\r\n\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + " \r\n * @desc " + window_cn_name + " 窗体\r\n * @date " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM - dd hh: mm:ss") + " \r\n */\r\n@ccclass\r\nexport default class " + toStudlyCaps(window_name) + "Window extends BWindow {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n\r\n\tpublic show(data?: any): void {\r\n\t\tsuper.show();\r\n\t}\r\n\r\n\tpublic hide(data?: any): void {\r\n\t\tsuper.hide();\r\n\t}\r\n\r\n\tpublic onDestroy(): void {\r\n\t\tsuper.onDestroy();\r\n\t}\r\n}";
+                fs.writeFile(wpath, wcontent, function (err) {
+                    if (!err) {
+                        let msg = "创建" + toStudlyCaps(window_name) + "Window.ts" + "成功!";
+                        mainWindow.webContents.send("client_show_message", msg);
+                    }
+                });
+            }
+        }));
+
+        //----------修改WindowConst
+        let wcpath = global.sharedObject.client_project_path + "/assets/script/game/constant/WindowConst.ts";
+        fs.readFile(wcpath, "utf8", function (err, data) {
+            if (!err) {
+                let wccontent = substr(data, 0, data.length - 1);
+                wccontent = wccontent + "\tpublic static " + toStudlyCaps(window_name) + "Window: string = \"" + toStudlyCaps(window_name) + "Window\";\n}";
+
+                fs.writeFile(wcpath, wccontent, function (err) {
+                    if (!err) {
+                        let msg = "修改WindowConst成功!";
+                        mainWindow.webContents.send("client_show_message", msg);
+                    }
+                });
+            }
+        });
+
+        //-----------修改Win2CtrlConst
+        let wccpath = global.sharedObject.client_project_path + "/assets/script/game/constant/Win2CtrlConst.ts";
+        fs.readFile(wccpath, "utf8", function (err, data) {
+            if (!err) {
+                let datas = data.split("ModuleConst." + window_module_name);
+                let preData = datas[0];
+                let nexDatas = datas[1].split("[");
+                let preString = datas[0] + "ModuleConst." + window_module_name + nexDatas[0] + "[";
+
+                endString = "\n\t\t\t\tWindowConst." + toStudlyCaps(window_name) + "Window," + nexDatas[1];
+
+                let wcccontent = preString + endString;
+                wcccontent = "import " + toStudlyCaps(window_name) + "Window from '../module/" + window_module_name + "/view/" + toStudlyCaps(window_name) + "Window';\n" + wcccontent;
                 fs.writeFile(wccpath, wcccontent, function (err) {
                     if (!err) {
                         let msg = "修改Win2CtrlConst成功!";

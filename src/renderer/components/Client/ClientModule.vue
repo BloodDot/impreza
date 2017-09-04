@@ -1,7 +1,7 @@
 <template>
     <div>
-        <mu-raised-button label="创建模块" class="demo-snackbar-button" @click="showDialog" primary/>
-
+        <mu-raised-button label="创建模块" class="demo-snackbar-button" @click="showModuleDialog" primary/>
+        <mu-raised-button label="创建窗体" class="demo-snackbar-button" @click="showWindowDialog" primary/>
         <mu-sub-header>模块列表</mu-sub-header>
         <mu-table :fixedHeader="fixedHeader" :height="tableHeight" :enableSelectAll="enableSelectAll" :multiSelectable="multiSelectable" :selectable="selectable" :showCheckbox="showCheckbox">
             <mu-thead>
@@ -18,7 +18,7 @@
             </mu-tbody>
         </mu-table>
 
-        <mu-dialog :open="dialog" title="创建模块" @close="hideDialog">
+        <mu-dialog :open="moduleDialog" title="创建模块" @close="hideModuleDialog">
             <mu-content-block class="demo-raised-button-container">
                 <mu-text-field class="demo-text-field" label="请输入模块名称" hintText="模块名称" v-model="module_name" />
             </mu-content-block>
@@ -26,12 +26,28 @@
                 <mu-text-field class="demo-text-field" label="请输入模块中文名称" hintText="模块中文名称" v-model="module_cn_name" />
             </mu-content-block>
 
-            <mu-flat-button slot="actions" @click="hideDialog" primary label="取消" />
+            <mu-flat-button slot="actions" @click="hideModuleDialog" primary label="取消" />
             <mu-flat-button slot="actions" primary @click="createModule" label="确定" />
+        </mu-dialog>
+
+        <mu-dialog :open="windowDialog" title="创建窗体" @close="hideWindowDialog">
+            <mu-content-block class="demo-raised-button-container">
+                <mu-text-field class="demo-text-field" label="请输入窗体名称" hintText="窗体名称" v-model="window_name" />
+            </mu-content-block>
+            <mu-content-block class="demo-raised-button-container">
+                <mu-text-field class="demo-text-field" label="请输入窗体中文名称" hintText="窗体中文名称" v-model="window_cn_name" />
+            </mu-content-block>
+            <mu-content-block class="demo-raised-button-container">
+                <mu-select-field v-model="window_module_name" :labelFocusClass="['label-foucs']" label="选择所属模块">
+                    <mu-menu-item v-for="data,index in tableData" :key="index" :value="data.moduleName" :title="data.moduleName" />
+                </mu-select-field>
+            </mu-content-block>
+
+            <mu-flat-button slot="actions" @click="hideWindowDialog" primary label="取消" />
+            <mu-flat-button slot="actions" primary @click="createWindow" label="确定" />
         </mu-dialog>
     </div>
 </template>
-
 
 <script>
 const ipcRenderer = require('electron').ipcRenderer;
@@ -42,9 +58,12 @@ export default {
         return {
             module_name: "",
             module_cn_name: "",
+            window_name: "",
+            window_cn_name: "",
+            window_module_name: "",
 
-            dialog: false,
-
+            moduleDialog: false,
+            windowDialog: false,
 
             tableHeight: "750px",
             fixedHeader: true,
@@ -58,11 +77,11 @@ export default {
         }
     },
     methods: {
-        showDialog () {
-            this.dialog = true;
+        showModuleDialog () {
+            this.moduleDialog = true;
         },
-        hideDialog () {
-            this.dialog = false;
+        hideModuleDialog () {
+            this.moduleDialog = false;
             this.module_name = "";
             this.module_cn_name = "";
         },
@@ -80,14 +99,43 @@ export default {
             for (var i = 0; i < this.tableData.length; i++) {
                 if (this.tableData[i].moduleName == this.module_name) {
                     ipcRenderer.send('client_show_message', "已存在该模块");
-                    this.hideDialog();
+                    this.hideModuleDialog();
                     return;
                 }
             }
 
             ipcRenderer.send('client_create_module', this.module_name, this.module_cn_name);
 
-            this.hideDialog();
+            this.hideModuleDialog();
+        },
+        showWindowDialog () {
+            this.windowDialog = true;
+        },
+        hideWindowDialog () {
+            this.windowDialog = false;
+            this.window_name = "";
+            this.window_cn_name = "";
+            this.window_module_name = "";
+        },
+        createWindow () {
+            if (!this.window_name) {
+                ipcRenderer.send('client_show_message', "窗体名不能为空");
+                return;
+            }
+
+            if (!this.window_cn_name) {
+                ipcRenderer.send('client_show_message', "窗体中文名不能为空");
+                return;
+            }
+
+            if (!this.window_module_name) {
+                ipcRenderer.send('client_show_message', "窗体模块名不能为空");
+                return;
+            }
+
+            ipcRenderer.send('client_create_window', this.window_name, this.window_cn_name, this.window_module_name);
+
+            this.hideWindowDialog();
         },
     },
     mounted () {
