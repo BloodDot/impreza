@@ -2,7 +2,7 @@
     <div class="layout">
         <div class="header">
             <div class="logo">
-                Impreza
+                Client
             </div>
         </div>
         <div class="content">
@@ -40,7 +40,6 @@ const ipcRenderer = require('electron').ipcRenderer;
 const remote = require('electron').remote;
 
 export default {
-
     data () {
         return {
             activeList: 'ClientModule',

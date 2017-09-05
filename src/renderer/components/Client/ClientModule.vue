@@ -25,6 +25,9 @@
             <mu-content-block class="demo-raised-button-container">
                 <mu-text-field class="demo-text-field" label="请输入模块中文名称" hintText="模块中文名称" v-model="module_cn_name" />
             </mu-content-block>
+            <mu-content-block class="demo-raised-button-container">
+                <mu-checkbox label="创建Screen" class="demo-checkbox" v-model="create_screen" />
+            </mu-content-block>
 
             <mu-flat-button slot="actions" @click="hideModuleDialog" primary label="取消" />
             <mu-flat-button slot="actions" primary @click="createModule" label="确定" />
@@ -58,9 +61,11 @@ export default {
         return {
             module_name: "",
             module_cn_name: "",
+            create_screen: false,
             window_name: "",
             window_cn_name: "",
             window_module_name: "",
+
 
             moduleDialog: false,
             windowDialog: false,
@@ -104,7 +109,7 @@ export default {
                 }
             }
 
-            ipcRenderer.send('client_create_module', this.module_name, this.module_cn_name);
+            ipcRenderer.send('client_create_module', this.module_name, this.module_cn_name, this.create_screen);
 
             this.hideModuleDialog();
         },
@@ -141,6 +146,8 @@ export default {
     mounted () {
         this.tableData = remote.getGlobal('sharedObject').client_modules;
 
+        ipcRenderer.removeAllListeners(['client_init_complete', 'client_module_refresh_complete']);
+
         ipcRenderer.on('client_init_complete', function (event, modules) {
             this.tableData = modules;
         }.bind(this))
@@ -165,5 +172,9 @@ export default {
 
 .demo-table-module {
     width: 80px
+}
+
+.demo-checkbox {
+    margin-bottom: 16px;
 }
 </style>

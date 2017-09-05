@@ -70,6 +70,8 @@ export default {
             this.client_proto_path = proto_path;
         }
 
+        ipcRenderer.removeAllListeners(['selected_client_project_path', 'selected_client_proto_path']);
+
         ipcRenderer.on('selected_client_project_path', function (event, path) {
             this.client_project_path = path[0];
         }.bind(this)),

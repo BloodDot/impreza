@@ -7,6 +7,10 @@ exports.init = function (mainWindow) {
     const replace = require('strman').replace;
     const substr = require('strman').substr;
     const toStudlyCaps = require('strman').toStudlyCaps;
+    const toCamelCase = require('strman').toCamelCase;
+    const leftTrim = require('strman').leftTrim;
+    const rightTrim = require('strman').rightTrim;
+    const trim = require('strman').trim;
 
     let win2ctrl = "/assets/script/game/constant/Win2CtrlConst.ts";
 
@@ -57,7 +61,7 @@ exports.init = function (mainWindow) {
             return;
         }
         if (!global.sharedObject.client_project_path) {
-            return
+            return;
         }
         refreshModules(event, 1);
     }.bind(this))
@@ -69,8 +73,15 @@ exports.init = function (mainWindow) {
         refreshModules(event, 2);
     }.bind(this))
 
-    ipcMain.on('client_create_module', function (event, module_name, module_cn_name) {
-        createModule(event, module_name, module_cn_name);
+    ipcMain.on('client_proto_refresh', function (event) {
+        if (!global.sharedObject.client_proto_path) {
+            return;
+        }
+        refreshProtos(event);
+    }.bind(this))
+
+    ipcMain.on('client_create_module', function (event, module_name, module_cn_name, create_screen) {
+        createModule(event, module_name, module_cn_name, create_screen);
     }.bind(this));
 
     ipcMain.on('client_create_window', function (event, window_name, window_cn_name, window_module_name) {
@@ -79,6 +90,14 @@ exports.init = function (mainWindow) {
 
     ipcMain.on('client_show_message', function (event, msg) {
         mainWindow.webContents.send("client_show_message", msg);
+    }.bind(this));
+
+    ipcMain.on('client_select_proto_file', function (event, file_name) {
+        selectProtoFile(event, file_name);
+    }.bind(this));
+
+    ipcMain.on('client_setting_proto', function (event, game_module_name, proto_module_name, proto_cmd_class, proto_objs) {
+        settingProto(event, game_module_name, proto_module_name, proto_cmd_class, proto_objs);
     }.bind(this));
 
     function refreshModules(event, type) {
@@ -95,6 +114,7 @@ exports.init = function (mainWindow) {
         fs.readFile(global.sharedObject.client_project_path + win2ctrl, 'utf8', function (err, data) {
             let datas = data.split("=");
             let datastr = replace(replace(removeSpaces(datas[1]), "\r", ""), "\n", "");
+            datastr = rightTrim(datastr);
             datastr = substr(datastr, 1, datastr.length - 5);
             let modules = global.sharedObject.modules = datastr.split("},");
             for (let i = 0; i < modules.length; i++) {
@@ -123,6 +143,10 @@ exports.init = function (mainWindow) {
             switch (type) {
                 case 1:
                     event.sender.send('client_init_complete', global.sharedObject.client_modules);
+                    if (!global.sharedObject.client_proto_path) {
+                        return;
+                    }
+                    refreshProtos(event);
                     break;
                 case 2:
                     event.sender.send('client_module_refresh_complete', global.sharedObject.client_modules);
@@ -133,7 +157,7 @@ exports.init = function (mainWindow) {
         });
     }
 
-    function createModule(event, module_name, module_cn_name) {
+    function createModule(event, module_name, module_cn_name, create_screen) {
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name);
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/controller");
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/model");
@@ -142,6 +166,26 @@ exports.init = function (mainWindow) {
 
         let author = global.sharedObject.client_author;
 
+        //----------创建屏幕
+        if (create_screen) {
+            fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/screen");
+            let spath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/screen/" + toStudlyCaps(module_name) + "Screen.ts";
+            if (fs.exists(spath, function (exists) {
+                if (exists) {
+                    let msg = toStudlyCaps(module_name) + "Screen.ts" + "已存在";
+                    mainWindow.webContents.send("client_show_message", msg);
+                } else {
+                    let scontent = "import BScreen from '../../../../framework/screen/BScreen';\r\nimport IScreen from '../../../../framework/screen/IScreen';\r\nimport WindowConst from '../../../constant/WindowConst';\r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "屏幕\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n */\r\nexport default class " + toStudlyCaps(module_name) + "Screen extends BScreen implements IScreen {\r\n\tpublic constructor(screenName: string) {\r\n\t\tsuper(screenName);\r\n\t}\r\n\r\n\tpublic onEnter(args: any): void {\r\n\t\tthis.openWindow(WindowConst." + toStudlyCaps(module_name) + "Window);\r\n\r\n\t\tsuper.onEnter(args);\r\n\t}\r\n}";
+                    fs.writeFile(spath, scontent, function (err) {
+                        if (!err) {
+                            let msg = "创建" + toStudlyCaps(module_name) + "Screen.ts" + "成功";
+                            mainWindow.webContents.send("client_show_message", msg);
+                        }
+                    });
+                }
+            }));
+        }
+
         //----------创建控制器
         let cpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/controller/" + toStudlyCaps(module_name) + "Controller.ts";
         if (fs.exists(cpath, function (exists) {
@@ -149,7 +193,15 @@ exports.init = function (mainWindow) {
                 let msg = toStudlyCaps(module_name) + "Controller.ts" + "已存在";
                 mainWindow.webContents.send("client_show_message", msg);
             } else {
-                let ccontent = "import BController from '../../../../framework/mvc/controller/BController';\r\n\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "控制器\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n*/\r\n@ccclass\r\nexport default class " + toStudlyCaps(module_name) + "Controller extends BController {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n\r\n\tpublic static getClass() {\r\n\t\treturn this.constructor;\r\n\t}\r\n}";
+                let ccontent = "import BController from '../../../../framework/mvc/controller/BController';\r\n"
+                ccontent += "import CmdDispatchManager from '../../../../freedom/manager/CmdDispatchManager';\r\n";
+                ccontent += "import { MsgEnum } from '../../../../freedom/enum/MsgEnum';\r\n";
+                ccontent += "import MsgVO from '../../../framework/vo/MsgVO'\r\n";
+                ccontent += "import ProtoManager from '../../../../freedom/manager/ProtoManager';\r\n";
+                ccontent += "import ProtoResponse from '../../../../freedom/net/component/ProtoResponse';\r\n"
+                ccontent += "import SocketManager from '../../../../freedom/manager/SocketManager';\r\n";
+                ccontent += "import StatusCode from '../../../constant/StatusCode';\r\n"
+                ccontent += "\r\nconst { ccclass, property } = cc._decorator;\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "控制器\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + "\r\n*/\r\n@ccclass\r\nexport default class " + toStudlyCaps(module_name) + "Controller extends BController {\r\n\tpublic constructor() {\r\n\t\tsuper();\r\n\t}\r\n}";
                 fs.writeFile(cpath, ccontent, function (err) {
                     if (!err) {
                         let msg = "创建" + toStudlyCaps(module_name) + "Controller.ts" + "成功";
@@ -158,7 +210,6 @@ exports.init = function (mainWindow) {
                 });
             }
         }));
-
 
         //----------创建数据模型
         let mpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/model/" + toStudlyCaps(module_name) + "Model.ts";
@@ -202,10 +253,31 @@ exports.init = function (mainWindow) {
         // 	}
         // });
 
+        //----------修改ScreenConst
+        if (create_screen) {
+            let scpath = global.sharedObject.client_project_path + "/assets/script/game/constant/ScreenConst.ts";
+            fs.readFile(scpath, "utf8", function (err, data) {
+                if (!err) {
+                    data = rightTrim(data);
+                    let sccontent = substr(data, 0, data.length - 1);
+                    sccontent = "import " + toStudlyCaps(module_name) + "Screen from '../module/" + module_name + "/screen/" + toStudlyCaps(module_name) + "Screen';\n" + sccontent;
+                    sccontent = sccontent + "\tpublic static " + module_name + "Screen = " + module_name + "Screen;\n}";
+
+                    fs.writeFile(scpath, sccontent, function (err) {
+                        if (!err) {
+                            let msg = "修改ScreenConst成功";
+                            mainWindow.webContents.send("client_show_message", msg);
+                        }
+                    });
+                }
+            });
+        }
+
         //----------修改ModuleConst
         let mdpath = global.sharedObject.client_project_path + "/assets/script/game/constant/ModuleConst.ts";
         fs.readFile(mdpath, "utf8", function (err, data) {
             if (!err) {
+                data = rightTrim(data);
                 let mdcontent = substr(data, 0, data.length - 1);
                 mdcontent = mdcontent + "\tpublic static " + module_name + ": string = \"" + module_name + "\";\n}";
 
@@ -222,6 +294,7 @@ exports.init = function (mainWindow) {
         let wcpath = global.sharedObject.client_project_path + "/assets/script/game/constant/WindowConst.ts";
         fs.readFile(wcpath, "utf8", function (err, data) {
             if (!err) {
+                data = rightTrim(data);
                 let wccontent = substr(data, 0, data.length - 1);
                 wccontent = wccontent + "\tpublic static " + toStudlyCaps(module_name) + "Window: string = \"" + toStudlyCaps(module_name) + "Window\";\n}";
 
@@ -238,6 +311,7 @@ exports.init = function (mainWindow) {
         let ccpath = global.sharedObject.client_project_path + "/assets/script/game/constant/CtrlConst.ts";
         fs.readFile(ccpath, "utf8", function (err, data) {
             if (!err) {
+                data = rightTrim(data);
                 let cccontent = substr(data, 0, data.length - 1);
                 cccontent = "import " + toStudlyCaps(module_name) + "Controller from '../module/" + module_name + "/controller/" + toStudlyCaps(module_name) + "Controller';\n" + cccontent;
                 cccontent = cccontent + "\tpublic static " + toStudlyCaps(module_name) + "Controller = " + toStudlyCaps(module_name) + "Controller;\n}";
@@ -255,6 +329,7 @@ exports.init = function (mainWindow) {
         let wccpath = global.sharedObject.client_project_path + "/assets/script/game/constant/Win2CtrlConst.ts";
         fs.readFile(wccpath, "utf8", function (err, data) {
             if (!err) {
+                data = rightTrim(data);
                 let wcccontent = substr(data, 0, data.length - 5);
                 wcccontent = "import " + toStudlyCaps(module_name) + "Controller from '../module/" + module_name + "/controller/" + toStudlyCaps(module_name) + "Controller';\n" + wcccontent;
                 wcccontent = "import " + toStudlyCaps(module_name) + "Window from '../module/" + module_name + "/view/" + toStudlyCaps(module_name) + "Window';\n" + wcccontent;
@@ -339,10 +414,184 @@ exports.init = function (mainWindow) {
         }, 500);
     }
 
+    function refreshProtos(event) {
+        let proto_path = global.sharedObject.client_proto_path;
+
+        let pa = fs.readdirSync(proto_path);
+        let protoModules = [];
+        let protoFiles = [];
+        let content = "";
+        pa.forEach(function (ele, index) {
+            let info = fs.statSync(proto_path + "/" + ele)
+            if (info.isDirectory()) {
+                readDirSync(proto_path + "/" + ele);
+            } else {
+                let t = ele.split(".")[1];
+                if (ele == "PBMODULE.proto") {
+                    let eleContent = fs.readFileSync(proto_path + "/" + ele, "utf-8");
+                    eleContent = rightTrim(eleContent);
+
+                    eleContent = eleContent.split("PModule")[1];
+                    eleContent = substr(eleContent, 1, eleContent.length - 2);
+
+                    eles = eleContent.split(";");
+                    for (let index = 0; index < eles.length; index++) {
+                        if (index != eles.length - 1) {
+                            protoModules.push(trim(eles[index].split("=")[0]));
+                        }
+                    }
+                } else if (t == "proto") {
+                    protoFiles.push(ele);
+                } else {
+
+                }
+            }
+        }.bind(this));
+
+        global.sharedObject.proto_modules = protoModules;
+        global.sharedObject.proto_files = protoFiles;
+        event.sender.send('client_proto_refresh_complete', global.sharedObject.client_modules, protoModules, protoFiles);
+    }
+
+    function selectProtoFile(event, file_name) {
+        let ptpath = global.sharedObject.client_proto_path + "/" + file_name;
+        fs.readFile(ptpath, "utf8", function (err, data) {
+            if (!err) {
+                data = rightTrim(data);
+                let msgs = data.split("message");
+                let protoCmds = [];
+                let cmdData = msgs[0];
+
+                cmdData = cmdData.split("enum")[1];
+                let cmdInfo = cmdData.split("{");
+                let protoCmdClassName = cmdInfo[0];
+                cmdData = cmdInfo[1];
+                cmdData = rightTrim(replace(replace(cmdData, "\r", ""), "\n", ""));
+                cmdData = substr(cmdData, 1, cmdData.length - 2);
+                let cmdDatas = cmdData.split(";")
+                for (let i = 0; i < cmdDatas.length - 1; i++) {
+                    let element = cmdDatas[i];
+                    let cmd = removeSpaces(element.split("=")[0]);
+                    protoCmds.push(cmd);
+                }
+                global.sharedObject.proto_cmds = protoCmds;
+
+                let protoMessages = [];
+                for (let index = 1; index < msgs.length; index++) {
+                    let ele = msgs[index];
+                    ele = rightTrim(leftTrim(ele));
+
+                    let eles = ele.split("{");
+                    let obj = {};
+                    obj.name = trim(eles[0]);
+                    let attr = rightTrim(eles[1]);
+                    attr = replace(replace(attr, "\r", ""), "\n", "");
+                    let attrs = attr.split(";");
+                    for (let m = 0; m < attrs.length - 1; m++) {
+                        let attrName = trim(attrs[m].split("=")[0].split(" ")[1]);
+                        obj[attrName] = attrName;
+                    }
+                    protoMessages.push(obj);
+                }
+
+
+                global.sharedObject.proto_cmd_class = protoCmdClassName;
+                global.sharedObject.proto_messages = protoMessages;
+
+                event.sender.send('client_select_proto_file_complete', global.sharedObject.proto_cmd_class, global.sharedObject.proto_cmds, global.sharedObject.proto_messages);
+            }
+        });
+    }
+
+    function settingProto(event, game_module_name, proto_module_name, proto_cmd_class, proto_objs) {
+        //----------修改Controller
+        proto_module_name = removeSpaces(proto_module_name);
+        let cpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + game_module_name + "/controller/" + toStudlyCaps(game_module_name) + "Controller.ts";
+        fs.readFile(cpath, "utf8", function (err, data) {
+            if (!err) {
+                let datas = data.split("super();");
+                let preContent = datas[0] + "super();";
+                let cenContent = "";
+                let nexContent = "\r\n}";
+
+                let registerMsg = "";
+                registerMsg += "\r\n\t\tlet cdm = CmdDispatchManager.getInstance();\r\n";
+                registerMsg += "\t\tlet pm = ProtoManager.getInstance();\r\n";
+                let functionMsg = "";
+
+                for (let index = 0; index < proto_objs.length; index++) {
+                    let element = proto_objs[index];
+                    registerMsg += "\t\tthis.registerMsg(MsgEnum." + element.request + ", this." + toCamelCase(element.request) + ", this);\r\n"
+                    registerMsg += "\t\tcdm.addCmdListener(pm.getMessageKey(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + "), this." + toCamelCase(element.response) + ", this);\r\n";
+
+                    //--request 方法
+                    functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.request) + "(msg:MsgVO): void {\r\n";
+                    functionMsg += "\t\tlet data:Proto2TypeScript." + element.request + " = ProtoManager.getInstance().createProto(MsgEnum[MsgEnum." + element.request + "]);\r\n";
+                    let reqObj = getMessageObject(element.request);
+                    for (let key in reqObj) {
+                        if (key != "name") {
+                            functionMsg += "\t\tdata." + reqObj[key] + " = msg.data." + reqObj[key] + ";\r\n";
+                        }
+                    }
+                    functionMsg += "\t\tSocketManager.getInstance().sendData(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + ", data);\r\n"
+                    functionMsg += "\t}";
+
+                    //--response 方法
+                    functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.response) + "(protoResponse: ProtoResponse): void {\r\n";
+                    functionMsg += "\t\tif (protoResponse.statusCode !== StatusCode.Success) {\r\n";
+                    functionMsg += "\t\t\treturn;\r\n";
+                    functionMsg += "\t\t}\r\n";
+                    functionMsg += "\t\tlet data: Proto2TypeScript." + element.response + " = protoResponse.getProtoBufModel(MsgEnum[MsgEnum." + element.request + "]);\r\n";
+                    let resObj = getMessageObject(element.response);
+                    for (let key in resObj) {
+                        if (key != "name") {
+                            functionMsg += "\t\tdata." + resObj[key] + ";\r\n";
+                        }
+                    }
+                    functionMsg += "\t}";
+                }
+                registerMsg += "\r\n\t}";
+                cenContent += registerMsg;
+                cenContent += functionMsg;
+
+                let content = preContent + cenContent + nexContent;
+
+                fs.writeFile(cpath, content, function (err) {
+                    if (!err) {
+                        let msg = "修改Controller成功";
+                        mainWindow.webContents.send("client_show_message", msg);
+                    }
+                });
+            }
+        });
+
+
+        //----------修改MsgEnum.ts
+
+
+
+    }
+
+    function getMessageObject(messageName) {
+        let array = global.sharedObject.proto_messages;
+        for (let index = 0; index < array.length; index++) {
+            let element = array[index];
+            if (element.name == messageName) {
+                return element;
+            }
+        }
+    }
+
     global.sharedObject = {
         client_author: "",
         client_project_path: "",
         client_proto_path: "",
-        client_modules: []
+        client_modules: [],
+        proto_modules: [],
+        proto_files: [],
+        proto_cmd_class: "",
+        proto_messages: [],
+        proto_cmds: [],
+        proto_objs: [],
     }
 }
