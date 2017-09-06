@@ -52,9 +52,8 @@
                 </div>
             </div>
             <mu-card-actions>
-                <mu-content-block class="demo-raised-button-container">
-                    <mu-raised-button label="生成" @click="protoSetting" primary/>
-                </mu-content-block>
+                <mu-raised-button label="生成" class="demo-snackbar-button" @click="protoSetting" primary/>
+                <mu-raised-button label="清除" class="demo-snackbar-button" @click="clearData" backgroundColor="#e91e63" primary/>
             </mu-card-actions>
         </mu-card>
 
@@ -77,7 +76,6 @@ export default {
             proto_path: "",
             game_module_name: "",
             proto_module_name: "",
-            proto_cmd_class_name: "",
             proto_file_name: "",
             game_modules: [
 
@@ -190,6 +188,15 @@ export default {
                 this.proto_objs.push(obj);
             }
         },
+        clearData () {
+            this.game_module_name = "";
+            this.proto_module_name = "";
+            this.proto_file_name = "";
+            this.proto_cmds = [];
+            this.proto_messages = [];
+            this.proto_objs = [];
+            this.proto_cmd_class = "";
+        }
     },
     mounted () {
         this.project_path = remote.getGlobal('sharedObject').client_project_path;
@@ -211,6 +218,12 @@ export default {
             this.proto_cmds = proto_cmds;
             this.proto_messages = proto_messages;
         }.bind(this));
+
+        ipcRenderer.on('client_setting_proto_complete', function (event) {
+            this.clearData();
+        }.bind(this));
+
+
     }
 }
 </script>
@@ -229,7 +242,7 @@ export default {
 }
 
 .content-left {
-    width: 30%;
+    width: 20%;
     float: left;
     background-color: white;
     margin-bottom: -4000px;
@@ -237,7 +250,7 @@ export default {
 }
 
 .content-right {
-    width: 70%;
+    width: 80%;
     display: inline-block;
     float: right;
     padding: 10px 20px;
@@ -245,6 +258,6 @@ export default {
 }
 
 .demo-table-proto {
-    width: 180px
+    /* width: 250px */
 }
 </style>

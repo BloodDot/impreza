@@ -179,7 +179,7 @@ exports.init = function (mainWindow) {
                     fs.writeFile(spath, scontent, function (err) {
                         if (!err) {
                             let msg = "创建" + toStudlyCaps(module_name) + "Screen.ts" + "成功";
-                            mainWindow.webContents.send("client_show_message", msg);
+                            mainWindow.webContents.send("client_add_log", msg);
                         }
                     });
                 }
@@ -196,7 +196,7 @@ exports.init = function (mainWindow) {
                 let ccontent = "import BController from '../../../../framework/mvc/controller/BController';\r\n"
                 ccontent += "import CmdDispatchManager from '../../../../freedom/manager/CmdDispatchManager';\r\n";
                 ccontent += "import { MsgEnum } from '../../../../freedom/enum/MsgEnum';\r\n";
-                ccontent += "import MsgVO from '../../../framework/vo/MsgVO'\r\n";
+                ccontent += "import MsgVO from '../../../../framework/vo/MsgVO'\r\n";
                 ccontent += "import ProtoManager from '../../../../freedom/manager/ProtoManager';\r\n";
                 ccontent += "import ProtoResponse from '../../../../freedom/net/component/ProtoResponse';\r\n"
                 ccontent += "import SocketManager from '../../../../freedom/manager/SocketManager';\r\n";
@@ -205,7 +205,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(cpath, ccontent, function (err) {
                     if (!err) {
                         let msg = "创建" + toStudlyCaps(module_name) + "Controller.ts" + "成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -222,7 +222,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(mpath, mcontent, function (err) {
                     if (!err) {
                         let msg = "创建" + toStudlyCaps(module_name) + "Model.ts" + "成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -239,7 +239,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wpath, wcontent, function (err) {
                     if (!err) {
                         let msg = "创建" + toStudlyCaps(module_name) + "Window.ts" + "成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -266,7 +266,7 @@ exports.init = function (mainWindow) {
                     fs.writeFile(scpath, sccontent, function (err) {
                         if (!err) {
                             let msg = "修改ScreenConst成功";
-                            mainWindow.webContents.send("client_show_message", msg);
+                            mainWindow.webContents.send("client_add_log", msg);
                         }
                     });
                 }
@@ -284,7 +284,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(mdpath, mdcontent, function (err) {
                     if (!err) {
                         let msg = "修改ModuleConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -301,7 +301,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wcpath, wccontent, function (err) {
                     if (!err) {
                         let msg = "修改WindowConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -319,7 +319,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(ccpath, cccontent, function (err) {
                     if (!err) {
                         let msg = "修改CtrlConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -338,7 +338,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wccpath, wcccontent, function (err) {
                     if (!err) {
                         let msg = "修改Win2CtrlConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -364,7 +364,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wpath, wcontent, function (err) {
                     if (!err) {
                         let msg = "创建" + toStudlyCaps(window_name) + "Window.ts" + "成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -380,7 +380,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wcpath, wccontent, function (err) {
                     if (!err) {
                         let msg = "修改WindowConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -402,7 +402,7 @@ exports.init = function (mainWindow) {
                 fs.writeFile(wccpath, wcccontent, function (err) {
                     if (!err) {
                         let msg = "修改Win2CtrlConst成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
@@ -506,6 +506,7 @@ exports.init = function (mainWindow) {
     function settingProto(event, game_module_name, proto_module_name, proto_cmd_class, proto_objs) {
         //----------修改Controller
         proto_module_name = removeSpaces(proto_module_name);
+        proto_cmd_class = removeSpaces(proto_cmd_class);
         let cpath = global.sharedObject.client_project_path + "/assets/script/game/module/" + game_module_name + "/controller/" + toStudlyCaps(game_module_name) + "Controller.ts";
         fs.readFile(cpath, "utf8", function (err, data) {
             if (!err) {
@@ -517,41 +518,47 @@ exports.init = function (mainWindow) {
                 let registerMsg = "";
                 registerMsg += "\r\n\t\tlet cdm = CmdDispatchManager.getInstance();\r\n";
                 registerMsg += "\t\tlet pm = ProtoManager.getInstance();\r\n";
+                let addCmdMsg = "";
                 let functionMsg = "";
 
                 for (let index = 0; index < proto_objs.length; index++) {
                     let element = proto_objs[index];
-                    registerMsg += "\t\tthis.registerMsg(MsgEnum." + element.request + ", this." + toCamelCase(element.request) + ", this);\r\n"
-                    registerMsg += "\t\tcdm.addCmdListener(pm.getMessageKey(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + "), this." + toCamelCase(element.response) + ", this);\r\n";
 
-                    //--request 方法
-                    functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.request) + "(msg:MsgVO): void {\r\n";
-                    functionMsg += "\t\tlet data:Proto2TypeScript." + element.request + " = ProtoManager.getInstance().createProto(MsgEnum[MsgEnum." + element.request + "]);\r\n";
-                    let reqObj = getMessageObject(element.request);
-                    for (let key in reqObj) {
-                        if (key != "name") {
-                            functionMsg += "\t\tdata." + reqObj[key] + " = msg.data." + reqObj[key] + ";\r\n";
+                    //--request
+                    if (element.request) {
+                        registerMsg += "\t\tthis.registerMsg(MsgEnum." + element.request + ", this." + toCamelCase(element.request) + ", this);\r\n"
+                        functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.request) + "(msg: MsgVO): void {\r\n";
+                        functionMsg += "\t\tlet data: Proto2TypeScript." + element.request + " = ProtoManager.getInstance().createProto(MsgEnum[MsgEnum." + element.request + "]);\r\n";
+                        let reqObj = getMessageObject(element.request);
+                        for (let key in reqObj) {
+                            if (key != "name") {
+                                functionMsg += "\t\tdata." + reqObj[key] + " = msg.data." + reqObj[key] + ";\r\n";
+                            }
                         }
+                        functionMsg += "\t\tSocketManager.getInstance().sendData(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + ", data);\r\n"
+                        functionMsg += "\t}";
                     }
-                    functionMsg += "\t\tSocketManager.getInstance().sendData(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + ", data);\r\n"
-                    functionMsg += "\t}";
 
                     //--response 方法
-                    functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.response) + "(protoResponse: ProtoResponse): void {\r\n";
-                    functionMsg += "\t\tif (protoResponse.statusCode !== StatusCode.Success) {\r\n";
-                    functionMsg += "\t\t\treturn;\r\n";
-                    functionMsg += "\t\t}\r\n";
-                    functionMsg += "\t\tlet data: Proto2TypeScript." + element.response + " = protoResponse.getProtoBufModel(MsgEnum[MsgEnum." + element.request + "]);\r\n";
-                    let resObj = getMessageObject(element.response);
-                    for (let key in resObj) {
-                        if (key != "name") {
-                            functionMsg += "\t\tdata." + resObj[key] + ";\r\n";
+                    if (element.response) {
+                        addCmdMsg += "\t\tcdm.addCmdListener(pm.getMessageKey(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + "), this." + toCamelCase(element.response) + ", this);\r\n";
+                        functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.response) + "(protoResponse: ProtoResponse): void {\r\n";
+                        functionMsg += "\t\tif (protoResponse.statusCode !== StatusCode.Success) {\r\n";
+                        functionMsg += "\t\t\treturn;\r\n";
+                        functionMsg += "\t\t}\r\n";
+                        functionMsg += "\t\tlet data: Proto2TypeScript." + element.response + " = protoResponse.getProtoBufModel(MsgEnum[MsgEnum." + element.response + "]);\r\n";
+                        let resObj = getMessageObject(element.response);
+                        for (let key in resObj) {
+                            if (key != "name") {
+                                functionMsg += "\t\tdata." + resObj[key] + ";\r\n";
+                            }
                         }
+                        functionMsg += "\t}";
                     }
-                    functionMsg += "\t}";
                 }
-                registerMsg += "\r\n\t}";
+                addCmdMsg += "\r\n\t}";
                 cenContent += registerMsg;
+                cenContent += addCmdMsg;
                 cenContent += functionMsg;
 
                 let content = preContent + cenContent + nexContent;
@@ -559,17 +566,70 @@ exports.init = function (mainWindow) {
                 fs.writeFile(cpath, content, function (err) {
                     if (!err) {
                         let msg = "修改Controller成功";
-                        mainWindow.webContents.send("client_show_message", msg);
+                        mainWindow.webContents.send("client_add_log", msg);
                     }
                 });
             }
         });
 
-
         //----------修改MsgEnum.ts
+        let mepath = global.sharedObject.client_project_path + "/assets/script/freedom/enum/MsgEnum.ts";
+        fs.readFile(mepath, "utf8", function (err, data) {
+            if (!err) {
+                let datas = data.split("MsgEnum");
+                msg = removeSpaces(datas[1]);
+                msg = substr(msg, 1, msg.length - 2);
+                msgs = msg.split(",");
+                let msgNames = [];
+                for (let index = 0; index < msgs.length; index++) {
+                    let element = msgs[index];
+                    if (index == 0) {
+                        msgNames.push(element.split("=")[0]);
+                        continue;
+                    }
 
+                    if (index != msgs.length - 1) {
+                        msgNames.push(element);
+                        continue
+                    }
+                }
 
+                for (let index = 0; index < proto_objs.length; index++) {
+                    let element = proto_objs[index];
+                    if (element.request && msgNames.indexOf(element.request) == -1) {
+                        msgNames.push(element.request);
+                    }
+                    if (element.response && msgNames.indexOf(element.response) == -1) {
+                        msgNames.push(element.response);
+                    }
+                }
 
+                msgNames.sort();
+                let mecontent = datas[0];
+                for (var index = 0; index < msgNames.length; index++) {
+                    var element = msgNames[index];
+                    if (index == 0) {
+                        mecontent += "MsgEnum {\r\n\t" + element + " = 10001,\r\n";
+                    } else if (index == msgNames.length - 1) {
+                        mecontent += "\t" + element + ",\r\n}";
+                    } else {
+                        mecontent += "\t" + element + ",\r\n";
+                    }
+                }
+
+                fs.writeFile(mepath, mecontent, function (err) {
+                    if (!err) {
+                        let msg = "修改MsgEnum成功";
+                        mainWindow.webContents.send("client_add_log", msg);
+                    }
+                });
+            }
+        });
+
+        let msg = "设置协议完毕";
+        mainWindow.webContents.send("client_show_message", msg);
+
+        event.sender.send('client_setting_proto_complete');
     }
 
     function getMessageObject(messageName) {
@@ -589,9 +649,6 @@ exports.init = function (mainWindow) {
         client_modules: [],
         proto_modules: [],
         proto_files: [],
-        proto_cmd_class: "",
         proto_messages: [],
-        proto_cmds: [],
-        proto_objs: [],
     }
 }
