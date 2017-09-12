@@ -143,6 +143,8 @@ export default {
                     if (t == "proto") {
                         var eleContent = fs.readFileSync(this.proto_path + "/" + ele, "utf-8");
                         eleContent = eleContent.replace("syntax = \"proto3\";", "");
+                        eleContent = eleContent.replace("import \"PBMSGCOMMON.proto\";", "");
+                        eleContent = eleContent.replace("option java_package = \"com.qp.game.proto\";", "");
                         content += "// ----- from " + ele + " ---- \n";
                         content += eleContent + "\n";
                     }
