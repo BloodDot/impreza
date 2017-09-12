@@ -1,7 +1,8 @@
 <template>
     <div>
         <mu-raised-button label="生成json文件" class="demo-snackbar-button" @click="createJson" primary/>
-        <mu-raised-button label="生成typescript类" class="demo-snackbar-button" @click="createTypescript" primary/>
+        <mu-raised-button label="生成typescript文件" class="demo-snackbar-button" @click="createTypescript" primary/>
+        <mu-raised-button label="生成javascript文件" class="demo-snackbar-button" @click="createJavascript" primary/>
         <mu-raised-button label="合成proto文件" class="demo-snackbar-button" @click="composeProto" primary/>
 
         <mu-card>
@@ -107,7 +108,7 @@ export default {
     },
     methods: {
         createJson () {
-            var cmdStr = "pbjs " + this.proto_path + "/a_proto_list.md > " + this.project_path + "/assets/resources/proto/proto.json"
+            var cmdStr = "pbjs " + this.proto_path + "/a_proto_list.md > " + this.project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.json"
             exec(cmdStr, function (err, stdout, stderr) {
                 if (err) {
                     ipcRenderer.send('client_show_message', "生成json错误");
@@ -117,7 +118,7 @@ export default {
             });
         },
         createTypescript () {
-            var cmdStr = "proto2typescript --file " + this.project_path + "/assets/resources/proto/proto.json" + " > " + this.project_path + "/assets/script/game/net/proto/proto.d.ts";
+            var cmdStr = "proto2typescript --file " + this.project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.json" + " > " + this.project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.d.ts";
             console.log(cmdStr);
             exec(cmdStr, function (err, stdout, stderr) {
                 if (err) {
@@ -127,9 +128,12 @@ export default {
                 }
             });
         },
+        createJavascript () {
+            ipcRenderer.send('client_create_proto_javascript');
+        },
         composeProto () {
             var pa = fs.readdirSync(this.proto_path);
-            var content = "";
+            var content = "syntax = \"proto3\";\r\n";
             pa.forEach(function (ele, index) {
                 var info = fs.statSync(this.proto_path + "/" + ele)
                 if (info.isDirectory()) {
@@ -138,6 +142,7 @@ export default {
                     var t = ele.split(".")[1];
                     if (t == "proto") {
                         var eleContent = fs.readFileSync(this.proto_path + "/" + ele, "utf-8");
+                        eleContent = eleContent.replace("syntax = \"proto3\";", "");
                         content += "// ----- from " + ele + " ---- \n";
                         content += eleContent + "\n";
                     }

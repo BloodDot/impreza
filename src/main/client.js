@@ -100,6 +100,10 @@ exports.init = function (mainWindow) {
         settingProto(event, game_module_name, proto_module_name, proto_cmd_class, proto_objs);
     }.bind(this));
 
+    ipcMain.on('client_create_proto_javascript', function (event) {
+        createProtoJavascript(event);
+    }.bind(this));
+
     function refreshModules(event, type) {
         switch (type) {
             case 1:
@@ -158,6 +162,16 @@ exports.init = function (mainWindow) {
     }
 
     function createModule(event, module_name, module_cn_name, create_screen) {
+        module_name = toCamelCase(module_name);
+
+        let module_path = global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name;
+        let exists = fs.existsSync(module_path);
+        if (exists) {
+            let msg = "模块" + module_name + "路径已存在";
+            mainWindow.webContents.send("client_show_message", msg);
+            return;
+        }
+
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name);
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/controller");
         fs.mkdirSync(global.sharedObject.client_project_path + "/assets/script/game/module/" + module_name + "/model");
@@ -175,7 +189,7 @@ exports.init = function (mainWindow) {
                     let msg = toStudlyCaps(module_name) + "Screen.ts" + "已存在";
                     mainWindow.webContents.send("client_show_message", msg);
                 } else {
-                    let scontent = "import BScreen from '../../../../framework/screen/BScreen';\r\nimport IScreen from '../../../../framework/screen/IScreen';\r\nimport WindowConst from '../../../constant/WindowConst';\r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "屏幕\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n */\r\nexport default class " + toStudlyCaps(module_name) + "Screen extends BScreen implements IScreen {\r\n\tpublic constructor(screenName: string) {\r\n\t\tsuper(screenName);\r\n\t}\r\n\r\n\tpublic onEnter(args: any): void {\r\n\t\tthis.openWindow(WindowConst." + toStudlyCaps(module_name) + "Window);\r\n\r\n\t\tsuper.onEnter(args);\r\n\t}\r\n}";
+                    let scontent = "import BScreen from '../../../../framework/mvc/screen/BScreen';\r\nimport IScreen from '../../../../framework/mvc/screen/IScreen';\r\nimport WindowConst from '../../../constant/WindowConst';\r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "屏幕\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n */\r\nexport default class " + toStudlyCaps(module_name) + "Screen extends BScreen implements IScreen {\r\n\tpublic constructor(screenName: string) {\r\n\t\tsuper(screenName);\r\n\t}\r\n\r\n\tpublic onEnter(args: any): void {\r\n\t\tthis.openWindow(WindowConst." + toStudlyCaps(module_name) + "Window);\r\n\r\n\t\tsuper.onEnter(args);\r\n\t}\r\n}";
                     fs.writeFile(spath, scontent, function (err) {
                         if (!err) {
                             let msg = "创建" + toStudlyCaps(module_name) + "Screen.ts" + "成功";
@@ -261,7 +275,7 @@ exports.init = function (mainWindow) {
                     data = rightTrim(data);
                     let sccontent = substr(data, 0, data.length - 1);
                     sccontent = "import " + toStudlyCaps(module_name) + "Screen from '../module/" + module_name + "/screen/" + toStudlyCaps(module_name) + "Screen';\n" + sccontent;
-                    sccontent = sccontent + "\tpublic static " + module_name + "Screen = " + module_name + "Screen;\n}";
+                    sccontent = sccontent + "\tpublic static " + toStudlyCaps(module_name) + "Screen = " + toStudlyCaps(module_name) + "Screen;\n}";
 
                     fs.writeFile(scpath, sccontent, function (err) {
                         if (!err) {
@@ -344,10 +358,31 @@ exports.init = function (mainWindow) {
             }
         });
 
+        //----------修改ModelManager
+        let mmpath = global.sharedObject.client_project_path + "/assets/script/freedom/manager/ModelManager.ts";
+        fs.readFile(mmpath, "utf8", function (err, data) {
+            if (!err) {
+                data = rightTrim(data);
+                let mmcontent = substr(data, 0, data.length - 1);
+                mmcontent = "import " + toStudlyCaps(module_name) + "Model from '../../game/module/" + module_name + "/model/" + toStudlyCaps(module_name) + "Model';\r\n" + mmcontent;
+                mmcontent = mmcontent + "\tpublic " + module_name + "Model: " + toStudlyCaps(module_name) + "Model = new " + toStudlyCaps(module_name) + "Model();\r\n}";
+
+                fs.writeFile(mmpath, mmcontent, function (err) {
+                    if (!err) {
+                        let msg = "修改ModelManager成功";
+                        mainWindow.webContents.send("client_add_log", msg);
+                    }
+                });
+            }
+        });
+
         //刷新模块列表
         setTimeout(function () {
             refreshModules(event, 2);
         }, 500);
+
+        let msg = "创建" + toStudlyCaps(module_name) + "模块完毕";
+        mainWindow.webContents.send("client_show_message", msg);
     }
 
     function createWindow(event, window_name, window_cn_name, window_module_name) {
@@ -412,6 +447,9 @@ exports.init = function (mainWindow) {
         setTimeout(function () {
             refreshModules(event, 2);
         }, 500);
+
+        let msg = "创建" + toStudlyCaps(window_name) + "Window.ts" + "窗体完毕";
+        mainWindow.webContents.send("client_show_message", msg);
     }
 
     function refreshProtos(event) {
@@ -424,7 +462,7 @@ exports.init = function (mainWindow) {
         pa.forEach(function (ele, index) {
             let info = fs.statSync(proto_path + "/" + ele)
             if (info.isDirectory()) {
-                readDirSync(proto_path + "/" + ele);
+                fs.readDirSync(proto_path + "/" + ele);
             } else {
                 let t = ele.split(".")[1];
                 if (ele == "PBMODULE.proto") {
@@ -630,6 +668,150 @@ exports.init = function (mainWindow) {
         mainWindow.webContents.send("client_show_message", msg);
 
         event.sender.send('client_setting_proto_complete');
+    }
+
+    function createProtoJavascript(event) {
+        let jscontent = "var Proto2TypeScript = {};\r\n";
+        let tscontent = "\r\ndeclare module Proto2TypeScript {\r\n\texport interface ProtoBufModel {}";
+
+        let proto_path = global.sharedObject.client_proto_path;
+        let pa = fs.readdirSync(proto_path);
+        pa.forEach(function (ele, index) {
+            let info = fs.statSync(proto_path + "/" + ele)
+            if (info.isDirectory()) {
+                readDirSync(proto_path + "/" + ele);
+            } else {
+                let t = ele.split(".")[1];
+                if (t == "proto") {
+                    if (ele != "PBMODULE.proto") {
+                        let data = fs.readFileSync(proto_path + "/" + ele, "utf-8");
+                        let reg = new RegExp(/(\/\/.*)|(\/\*[\s\S]*?\*\/)/g);
+                        data = data.replace(reg, "");
+
+                        data = rightTrim(data);
+                        let msgs = data.split("message");
+                        let cmdData = msgs[0];
+                        cmdData = cmdData.split("enum")[1];
+                        let cmdInfo = cmdData.split("{");
+                        let protoCmdClassName = removeSpaces(cmdInfo[0]);
+
+                        let msgTsContent = "\r\n\texport const enum " + protoCmdClassName + " {";
+                        let msgJsContent = "\r\nProto2TypeScript." + protoCmdClassName + " = {};";
+
+                        let enumObjs = analysisEnum("{" + cmdInfo[1]);
+                        for (var index = 0; index < enumObjs.length; index++) {
+                            var element = enumObjs[index];
+                            for (let key in element) {
+                                msgTsContent += "\r\n\t\t" + key + " = " + element[key] + ",";
+                                msgJsContent += "\r\nProto2TypeScript." + protoCmdClassName + "['" + key + "'] = " + element[key] + ";\r\nProto2TypeScript." + protoCmdClassName + "[" + element[key] + "] = '" + key + "';"
+                            }
+                        }
+                        msgTsContent += "\r\n\t}";
+
+                        for (let index = 1; index < msgs.length; index++) {
+                            let ele = msgs[index];
+                            ele = rightTrim(leftTrim(ele));
+
+                            let eles = ele.split("{");
+                            let objName = trim(eles[0]);
+                            msgTsContent += "\r\n\texport interface " + objName + " extends ProtoBufModel {";
+                            msgJsContent += "\r\nProto2TypeScript." + objName + " = {};";
+
+                            let attr = rightTrim(eles[1]);
+                            attr = replace(replace(attr, "\r", ""), "\n", "");
+                            let attrs = attr.split(";");
+                            for (let m = 0; m < attrs.length - 1; m++) {
+                                let attrInfo = attrs[m].split("=")[0].split(" ");
+                                let attrType = removeSpaces((attrInfo[0]));
+                                let attrName = removeSpaces(attrInfo[1]);
+                                if (attrType == "int32" || attrType == "int64") {
+                                    attrType = "number";
+                                } else if (attrType == "repeated") {
+                                    attrType = removeSpaces(attrInfo[1]) + "[]";
+                                    attrName = removeSpaces(attrInfo[2]);
+                                } else if (attrType.substr(0, 3) == "map") {
+                                    attrType = "[]";
+                                    if (attrInfo[2]) {
+                                        attrName = removeSpaces(attrInfo[2]);
+                                    } else {
+                                        attrName = removeSpaces(attrInfo[1]);
+                                    }
+                                } else {
+                                }
+                                msgJsContent += "\r\nProto2TypeScript." + objName + "." + attrName + ";";
+                                msgTsContent += "\r\n\t\t" + attrName + ": " + attrType + ";";
+                            }
+                            msgTsContent += "\r\n\t}";
+                        }
+
+                        jscontent += msgJsContent;
+                        tscontent += msgTsContent;
+                    } else {
+                        let eleContent = fs.readFileSync(proto_path + "/" + ele, "utf-8");
+                        let reg = new RegExp(/(\/\/.*)|(\/\*[\s\S]*?\*\/)/g);
+                        eleContent = eleContent.replace(reg, "");
+                        eleContent = eleContent.split("PModule")[1];
+
+                        let moduleTsContent = "\r\n\texport const enum PModule {\r\n";
+                        let moduleJsContent = "Proto2TypeScript.PModule = {};";
+
+                        let enumObjs = analysisEnum(eleContent);
+                        for (var index = 0; index < enumObjs.length; index++) {
+                            var element = enumObjs[index];
+                            for (let key in element) {
+                                moduleTsContent += "\t\t" + key + " = " + element[key] + ",\r\n";
+                                moduleJsContent += "\r\nProto2TypeScript.PModule['" + key + "'] = " + element[key] + ";\r\nProto2TypeScript.PModule[" + element[key] + "] = '" + key + "';"
+                            }
+                        }
+                        moduleTsContent += "\r\n\t}";
+
+                        jscontent += moduleJsContent;
+                        tscontent += moduleTsContent;
+                    }
+                }
+            }
+        }.bind(this));
+
+        jscontent += "";
+        tscontent += "\r\n}";
+
+        let jspath = global.sharedObject.client_project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.js";
+        let tspath = global.sharedObject.client_project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.d.ts";
+
+        fs.writeFile(jspath, jscontent, function (err) {
+            if (!err) {
+                let msg = "生成Proto2TypeScript.js成功";
+                mainWindow.webContents.send("client_add_log", msg);
+            }
+        });
+
+        // fs.writeFile(tspath, tscontent, function (err) {
+        //     if (!err) {
+        //         let msg = "生成Proto2TypeScript.d.ts成功";
+        //         mainWindow.webContents.send("client_add_log", msg);
+        //     }
+        // });
+
+        let msg = "生成javascript文件完毕";
+        mainWindow.webContents.send("client_show_message", msg);
+    }
+
+    function analysisEnum(content) {
+        let enumContent = removeSpaces(content);
+        enumContent = substr(enumContent, 1, enumContent.length - 2);
+        let enums = enumContent.split(";");
+        let enumObjs = [];
+        for (var index = 0; index < enums.length; index++) {
+            var element = enums[index];
+            if (index != enums.length - 1) {
+                let enumObj = element.split("=");
+                let obj = {};
+                obj[enumObj[0]] = enumObj[1]
+                enumObjs.push(obj);
+            }
+        }
+
+        return enumObjs;
     }
 
     function getMessageObject(messageName) {
