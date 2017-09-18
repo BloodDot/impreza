@@ -11,6 +11,7 @@ exports.init = function (mainWindow) {
     const leftTrim = require('strman').leftTrim;
     const rightTrim = require('strman').rightTrim;
     const trim = require('strman').trim;
+    const toLowerCase = require('strman').toLowerCase;
 
     let win2ctrl = "/assets/script/game/constant/Win2CtrlConst.ts";
 
@@ -102,6 +103,11 @@ exports.init = function (mainWindow) {
 
     ipcMain.on('client_create_proto_javascript', function (event) {
         createProtoJavascript(event);
+    }.bind(this));
+
+
+    ipcMain.on('client_refresh_proto', function (event) {
+        refreshProtos(event);
     }.bind(this));
 
     function refreshModules(event, type) {
@@ -495,6 +501,8 @@ exports.init = function (mainWindow) {
         let ptpath = global.sharedObject.client_proto_path + "/" + file_name;
         fs.readFile(ptpath, "utf8", function (err, data) {
             if (!err) {
+                let reg = new RegExp(/(\/\/.*)|(\/\*[\s\S]*?\*\/)/g);
+                data = data.replace(reg, "");
                 data = rightTrim(data);
                 let msgs = data.split("message");
                 let protoCmds = [];
@@ -526,12 +534,28 @@ exports.init = function (mainWindow) {
                     attr = replace(replace(attr, "\r", ""), "\n", "");
                     let attrs = attr.split(";");
                     for (let m = 0; m < attrs.length - 1; m++) {
-                        let attrName = trim(attrs[m].split("=")[0].split(" ")[1]);
+                        let attrInfo = attrs[m].split("=")[0].split(" ");
+                        let attrType = removeSpaces((attrInfo[0]));
+                        let attrName = removeSpaces(attrInfo[1]);
+                        if (attrType == "int32" || attrType == "int64") {
+                            attrType = "number";
+                        } else if (attrType == "repeated") {
+                            attrType = removeSpaces(attrInfo[1]) + "[]";
+                            attrName = removeSpaces(attrInfo[2]);
+                        } else if (attrType.substr(0, 3) == "map") {
+                            attrType = "[]";
+                            if (attrInfo[2]) {
+                                attrName = removeSpaces(attrInfo[2]);
+                            } else {
+                                attrName = removeSpaces(attrInfo[1]);
+                            }
+                        } else {
+                        }
+
                         obj[attrName] = attrName;
                     }
                     protoMessages.push(obj);
                 }
-
 
                 global.sharedObject.proto_cmd_class = protoCmdClassName;
                 global.sharedObject.proto_messages = protoMessages;
@@ -561,11 +585,19 @@ exports.init = function (mainWindow) {
 
                 for (let index = 0; index < proto_objs.length; index++) {
                     let element = proto_objs[index];
+                    let cmdDatas = element.cmd.split("_");
+                    let cmdStr = "";
+                    for (let index = 0; index < cmdDatas.length; index++) {
+                        let element = cmdDatas[index];
+                        if (index != 0) {
+                            cmdStr += toStudlyCaps(toLowerCase(element));
+                        }
+                    }
 
                     //--request
+                    registerMsg += "\t\tthis.registerMsg(MsgEnum.Req" + cmdStr + ", this.req" + cmdStr + ", this);\r\n"
+                    functionMsg += "\r\n\r\n\tprivate req" + cmdStr + "(msg: MsgVO): void {\r\n";
                     if (element.request) {
-                        registerMsg += "\t\tthis.registerMsg(MsgEnum." + element.request + ", this." + toCamelCase(element.request) + ", this);\r\n"
-                        functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.request) + "(msg: MsgVO): void {\r\n";
                         functionMsg += "\t\tlet data: Proto2TypeScript." + element.request + " = ProtoManager.getInstance().createProto(MsgEnum[MsgEnum." + element.request + "]);\r\n";
                         let reqObj = getMessageObject(element.request);
                         for (let key in reqObj) {
@@ -575,15 +607,18 @@ exports.init = function (mainWindow) {
                         }
                         functionMsg += "\t\tSocketManager.getInstance().sendData(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + ", data);\r\n"
                         functionMsg += "\t}";
+                    } else {
+                        functionMsg += "\t\tSocketManager.getInstance().sendData(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + ");\r\n"
+                        functionMsg += "\t}";
                     }
 
                     //--response 方法
+                    addCmdMsg += "\t\tcdm.addCmdListener(pm.getMessageKey(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + "), this.res" + cmdStr + ", this);\r\n";
+                    functionMsg += "\r\n\r\n\tprivate res" + cmdStr + "(protoResponse: ProtoResponse): void {\r\n";
+                    functionMsg += "\t\tif (protoResponse.statusCode !== StatusCode.Success) {\r\n";
+                    functionMsg += "\t\t\treturn;\r\n";
+                    functionMsg += "\t\t}\r\n";
                     if (element.response) {
-                        addCmdMsg += "\t\tcdm.addCmdListener(pm.getMessageKey(Proto2TypeScript.PModule." + proto_module_name + ", Proto2TypeScript." + proto_cmd_class + "." + element.cmd + "), this." + toCamelCase(element.response) + ", this);\r\n";
-                        functionMsg += "\r\n\r\n\tprivate " + toCamelCase(element.response) + "(protoResponse: ProtoResponse): void {\r\n";
-                        functionMsg += "\t\tif (protoResponse.statusCode !== StatusCode.Success) {\r\n";
-                        functionMsg += "\t\t\treturn;\r\n";
-                        functionMsg += "\t\t}\r\n";
                         functionMsg += "\t\tlet data: Proto2TypeScript." + element.response + " = protoResponse.getProtoBufModel(MsgEnum[MsgEnum." + element.response + "]);\r\n";
                         let resObj = getMessageObject(element.response);
                         for (let key in resObj) {
@@ -591,6 +626,8 @@ exports.init = function (mainWindow) {
                                 functionMsg += "\t\tdata." + resObj[key] + ";\r\n";
                             }
                         }
+                        functionMsg += "\t}";
+                    } else {
                         functionMsg += "\t}";
                     }
                 }
@@ -634,11 +671,20 @@ exports.init = function (mainWindow) {
 
                 for (let index = 0; index < proto_objs.length; index++) {
                     let element = proto_objs[index];
-                    if (element.request && msgNames.indexOf(element.request) == -1) {
-                        msgNames.push(element.request);
+                    let cmdDatas = element.cmd.split("_");
+                    let cmdStr = "";
+                    for (let i = 0; i < cmdDatas.length; i++) {
+                        let element = cmdDatas[i];
+                        if (i != 0) {
+                            cmdStr += toStudlyCaps(toLowerCase(element));
+                        }
                     }
-                    if (element.response && msgNames.indexOf(element.response) == -1) {
-                        msgNames.push(element.response);
+
+                    if (msgNames.indexOf(element.request) == -1) {
+                        msgNames.push("Req" + cmdStr);
+                    }
+                    if (msgNames.indexOf(element.response) == -1) {
+                        msgNames.push("Res" + cmdStr);
                     }
                 }
 
@@ -691,22 +737,28 @@ exports.init = function (mainWindow) {
                         data = rightTrim(data);
                         let msgs = data.split("message");
                         let cmdData = msgs[0];
-                        cmdData = cmdData.split("enum")[1];
-                        let cmdInfo = cmdData.split("{");
-                        let protoCmdClassName = removeSpaces(cmdInfo[0]);
+                        cmdDatas = cmdData.split("enum");
+                        let msgTsContent = "";
+                        let msgJsContent = "";
+                        for (let i = 0; i < cmdDatas.length; i++) {
+                            if (i != 0 && i != cmdDatas.length - 1) {
+                                let cmdInfo = cmdDatas[i].split("{");
+                                let protoCmdClassName = removeSpaces(cmdInfo[0]);
 
-                        let msgTsContent = "\r\n\texport const enum " + protoCmdClassName + " {";
-                        let msgJsContent = "\r\nProto2TypeScript." + protoCmdClassName + " = {};";
+                                msgTsContent += "\r\n\texport const enum " + protoCmdClassName + " {";
+                                msgJsContent += "\r\nProto2TypeScript." + protoCmdClassName + " = {};";
 
-                        let enumObjs = analysisEnum("{" + cmdInfo[1]);
-                        for (var index = 0; index < enumObjs.length; index++) {
-                            var element = enumObjs[index];
-                            for (let key in element) {
-                                msgTsContent += "\r\n\t\t" + key + " = " + element[key] + ",";
-                                msgJsContent += "\r\nProto2TypeScript." + protoCmdClassName + "['" + key + "'] = " + element[key] + ";\r\nProto2TypeScript." + protoCmdClassName + "[" + element[key] + "] = '" + key + "';"
+                                let enumObjs = analysisEnum("{" + cmdInfo[1]);
+                                for (let index = 0; index < enumObjs.length; index++) {
+                                    let element = enumObjs[index];
+                                    for (let key in element) {
+                                        msgTsContent += "\r\n\t\t" + key + " = " + element[key] + ",";
+                                        msgJsContent += "\r\nProto2TypeScript." + protoCmdClassName + "['" + key + "'] = " + element[key] + ";\r\nProto2TypeScript." + protoCmdClassName + "[" + element[key] + "] = '" + key + "';"
+                                    }
+                                }
+                                msgTsContent += "\r\n\t}";
                             }
                         }
-                        msgTsContent += "\r\n\t}";
 
                         for (let index = 1; index < msgs.length; index++) {
                             let ele = msgs[index];

@@ -55,6 +55,7 @@
             <mu-card-actions>
                 <mu-raised-button label="生成" class="demo-snackbar-button" @click="protoSetting" primary/>
                 <mu-raised-button label="清除" class="demo-snackbar-button" @click="clearData" backgroundColor="#e91e63" primary/>
+                <mu-raised-button label="刷新" class="demo-snackbar-button" @click="protoRefresh" backgroundColor="#6495ed" primary/>
             </mu-card-actions>
         </mu-card>
 
@@ -161,6 +162,9 @@ export default {
         protoSetting () {
             ipcRenderer.send('client_setting_proto', this.game_module_name, this.proto_module_name, this.proto_cmd_class, this.proto_objs);
         },
+        protoRefresh () {
+            ipcRenderer.send('client_refresh_proto');
+        },
         requestInput (cmd, request) {
             var hasCmd = false;
             for (var index = 0; index < this.proto_objs.length; index++) {
@@ -224,6 +228,23 @@ export default {
             this.proto_cmd_class = proto_cmd_class;
             this.proto_cmds = proto_cmds;
             this.proto_messages = proto_messages;
+            for (let index = 0; index < this.proto_cmds.length; index++) {
+                let element = this.proto_cmds[index];
+                let hasCmd = false;
+
+                for (let m = 0; m < this.proto_objs.length; m++) {
+                    if (this.proto_objs[m].cmd == element) {
+                        hasCmd = true;
+                        break;
+                    }
+                }
+
+                if (!hasCmd) {
+                    var obj = {};
+                    obj.cmd = element;
+                    this.proto_objs.push(obj);
+                }
+            }
         }.bind(this));
 
         ipcRenderer.on('client_setting_proto_complete', function (event) {
