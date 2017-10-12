@@ -195,7 +195,7 @@ exports.init = function (mainWindow) {
                     let msg = toStudlyCaps(module_name) + "Screen.ts" + "已存在";
                     mainWindow.webContents.send("client_show_message", msg);
                 } else {
-                    let scontent = "import BScreen from '../../../../framework/mvc/screen/BScreen';\r\nimport IScreen from '../../../../framework/mvc/screen/IScreen';\r\nimport WindowConst from '../../../constant/WindowConst';\r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "屏幕\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n */\r\nexport default class " + toStudlyCaps(module_name) + "Screen extends BScreen implements IScreen {\r\n\tpublic constructor(screenName: string) {\r\n\t\tsuper(screenName);\r\n\t}\r\n\r\n\tpublic onEnter(args: any): void {\r\n\t\tthis.openWindow(WindowConst." + toStudlyCaps(module_name) + "Window);\r\n\r\n\t\tsuper.onEnter(args);\r\n\t}\r\n}";
+                    let scontent = "const { ccclass, property } = cc._decorator;\r\nimport BScreen from '../../../../framework/mvc/screen/BScreen';\r\nimport { IScreen } from '../../../../framework/mvc/screen/IScreen';\r\nimport WindowConst from '../../../constant/WindowConst';\r\n\r\n/**\r\n * @author " + author + "\r\n * @desc " + module_cn_name + "屏幕\r\n * @date " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n * @last modified by   " + author + " \r\n * @last modified time " + dateFormat(new Date(), "yyyy-MM-dd hh:mm:ss") + " \r\n */\r\n@ccclass\r\nexport default class " + toStudlyCaps(module_name) + "Screen extends BScreen implements IScreen {\r\n\tpublic constructor(screenName: string) {\r\n\t\tsuper(screenName);\r\n\t}\r\n\r\n\tpublic onEnter(args: any): void {\r\n\t\tthis.openWindow(WindowConst." + toStudlyCaps(module_name) + "Window);\r\n\r\n\t\tsuper.onEnter(args);\r\n\t}\r\n}";
                     fs.writeFile(spath, scontent, function (err) {
                         if (!err) {
                             let msg = "创建" + toStudlyCaps(module_name) + "Screen.ts" + "成功";
@@ -659,13 +659,18 @@ exports.init = function (mainWindow) {
                 for (let index = 0; index < msgs.length; index++) {
                     let element = msgs[index];
                     if (index == 0) {
-                        msgNames.push(element.split("=")[0]);
+                        let msgName = element.split("=")[0];
+                        if (msgNames.indexOf(msgName) == -1) {
+                            msgNames.push(msgName);
+                        }
                         continue;
                     }
 
                     if (index != msgs.length - 1) {
-                        msgNames.push(element);
-                        continue
+                        if (msgNames.indexOf(element) == -1) {
+                            msgNames.push(element);
+                        }
+                        continue;
                     }
                 }
 
@@ -680,10 +685,10 @@ exports.init = function (mainWindow) {
                         }
                     }
 
-                    if (msgNames.indexOf(element.request) == -1) {
+                    if (msgNames.indexOf("Req" + cmdStr) == -1) {
                         msgNames.push("Req" + cmdStr);
                     }
-                    if (msgNames.indexOf(element.response) == -1) {
+                    if (msgNames.indexOf("Res" + cmdStr) == -1) {
                         msgNames.push("Res" + cmdStr);
                     }
                 }
@@ -741,7 +746,7 @@ exports.init = function (mainWindow) {
                         let msgTsContent = "";
                         let msgJsContent = "";
                         for (let i = 0; i < cmdDatas.length; i++) {
-                            if (i != 0 && i != cmdDatas.length - 1) {
+                            if (i != 0) {
                                 let cmdInfo = cmdDatas[i].split("{");
                                 let protoCmdClassName = removeSpaces(cmdInfo[0]);
 

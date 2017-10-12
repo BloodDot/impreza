@@ -1,5 +1,5 @@
-import Vue from 'vue'
 import Router from 'vue-router'
+import Vue from 'vue'
 
 Vue.use(Router)
 
@@ -7,10 +7,13 @@ export default new Router({
   routes: [
     {
       path: '/',
-      // name: 'landing-page',
-      // component: require('@/components/LandingPage')
-      name: 'clent',
+      name: 'client',
       component: require('@/components/Client')
+    },
+    {
+      path: '/server',
+      name: 'server',
+      component: require('@/components/Server')
     },
     {
       path: '*',
