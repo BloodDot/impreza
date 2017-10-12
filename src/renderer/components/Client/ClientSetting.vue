@@ -34,39 +34,39 @@ export default {
         },
         onProtoPathClick () {
             ipcRenderer.send('open_client_proto_path');
-        },
+        }
     },
     watch: {
-        client_author: function(val, oldVal) {
-            if(val != oldVal) {
+        client_author: function (val, oldVal) {
+            if (val != oldVal) {
                 remote.getGlobal('sharedObject').client_author = val;
-                localStorage.setItem("client_author",val);
+                localStorage.setItem("client_author", val);
             }
         },
         client_project_path: function (val, oldVal) {
-            if(val != oldVal){
+            if (val != oldVal) {
                 remote.getGlobal('sharedObject').client_project_path = val;
-                localStorage.setItem("client_project_path",val);
+                localStorage.setItem("client_project_path", val);
             }
         },
         client_proto_path: function (val, oldVal) {
-            if(val != oldVal){
+            if (val != oldVal) {
                 remote.getGlobal('sharedObject').client_proto_path = val;
-                localStorage.setItem("client_proto_path",val);
+                localStorage.setItem("client_proto_path", val);
             }
-        },
+        }
     },
-    mounted() {
+    mounted () {
         var author = localStorage.getItem("client_author");
         var project_path = localStorage.getItem("client_project_path");
         var proto_path = localStorage.getItem("client_proto_path");
-        if(author){
+        if (author) {
             this.client_author = author;
         }
-        if(project_path){
+        if (project_path) {
             this.client_project_path = project_path;
         }
-        if(proto_path){
+        if (proto_path) {
             this.client_proto_path = proto_path;
         }
 

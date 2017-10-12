@@ -91,7 +91,7 @@ export default {
 
         ipcRenderer.on('client_add_log', function (event, msg) {
             console.log(msg);
-        }.bind(this));
+        });
 
         ipcRenderer.send('client_init');
     }

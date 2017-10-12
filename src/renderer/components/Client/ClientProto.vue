@@ -97,7 +97,7 @@ export default {
             proto_objs: [
 
             ],
-            proto_cmd_class: "",
+            proto_cmd_class: ""
         }
     },
     watch: {
@@ -105,7 +105,7 @@ export default {
             if (val != oldVal) {
                 ipcRenderer.send('client_select_proto_file', val);
             }
-        },
+        }
     },
     methods: {
         createJson () {
@@ -250,8 +250,6 @@ export default {
         ipcRenderer.on('client_setting_proto_complete', function (event) {
             this.clearData();
         }.bind(this));
-
-
     }
 }
 </script>

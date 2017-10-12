@@ -141,7 +141,7 @@ export default {
             ipcRenderer.send('client_create_window', this.window_name, this.window_cn_name, this.window_module_name);
 
             this.hideWindowDialog();
-        },
+        }
     },
     mounted () {
         this.tableData = remote.getGlobal('sharedObject').client_modules;
