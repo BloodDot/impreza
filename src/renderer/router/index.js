@@ -11,11 +11,6 @@ export default new Router({
       component: require('@/components/Client')
     },
     {
-      path: '/server',
-      name: 'server',
-      component: require('@/components/Server')
-    },
-    {
       path: '*',
       redirect: '/'
     }
