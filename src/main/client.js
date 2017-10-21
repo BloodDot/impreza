@@ -130,7 +130,7 @@ exports.init = function (mainWindow) {
             for (let i = 0; i < modules.length; i++) {
                 let module = {};
 
-                let moduleStruct = substr(modules[i], 1, module.length)
+                let moduleStruct = substr(modules[i], 1, modules[i].length);
                 let moduleStructArr = moduleStruct.split("ctrl:");
                 let moduleName = moduleStructArr[0].split(",")[0].split(".")[1];
                 moduleStructArr = moduleStructArr[1].split("wins:");
@@ -143,6 +143,7 @@ exports.init = function (mainWindow) {
                 let windowStruct = moduleStructArr[1];
                 windowStruct = substr(windowStruct, 1, windowStruct.length - 2);
                 let windows = windowStruct.split(",");
+
                 for (let m = 0; m < windows.length; m++) {
                     module.windows.push(windows[m]);
                 }
@@ -436,7 +437,18 @@ exports.init = function (mainWindow) {
                 let nexDatas = datas[1].split("[");
                 let preString = datas[0] + "ModuleConst." + window_module_name + nexDatas[0] + "[";
 
-                endString = "\n\t\t\t\tWindowConst." + toStudlyCaps(window_name) + "Window," + nexDatas[1];
+                // endString = "\n\t\t\t\tWindowConst." + toStudlyCaps(window_name) + "Window," + nexDatas[1];
+                endString = "\n\t\t\t\tWindowConst." + toStudlyCaps(window_name) + "Window,";
+                for (var i = 0; i < nexDatas.length; i++) {
+                    var element = nexDatas[i];
+                    if (i != 0) {
+                        if (i == nexDatas.length - 1) {
+                            endString += element;
+                        } else {
+                            endString += element + "[";
+                        }
+                    }
+                }
 
                 let wcccontent = preString + endString;
                 wcccontent = "import " + toStudlyCaps(window_name) + "Window from '../module/" + window_module_name + "/view/" + toStudlyCaps(window_name) + "Window';\n" + wcccontent;
