@@ -57,6 +57,30 @@ exports.init = function (mainWindow) {
         })
     })
 
+    ipcMain.on('open_client_modify_edition_path', function (event) {
+        dialog.showOpenDialog({
+            properties: ['openFile']
+        }, function (files) {
+            event.sender.send('selected_client_modify_edition_path', files);
+        })
+    })
+
+    ipcMain.on('open_client_compile_code_path', function (event) {
+        dialog.showOpenDialog({
+            properties: ['openFile']
+        }, function (files) {
+            event.sender.send('selected_client_compile_code_path', files);
+        })
+    })
+
+    ipcMain.on('open_client_generate_eidtion_path', function (event) {
+        dialog.showOpenDialog({
+            properties: ['openFile']
+        }, function (files) {
+            event.sender.send('selected_client_generate_eidtion_path', files);
+        })
+    })
+
     ipcMain.on('client_init', function (event) {
         if (global.sharedObject.client_modules.length != 0) {
             return;
@@ -91,6 +115,10 @@ exports.init = function (mainWindow) {
 
     ipcMain.on('client_show_message', function (event, msg) {
         mainWindow.webContents.send("client_show_message", msg);
+    }.bind(this));
+
+    ipcMain.on('client_show_snack', function (event, msg) {
+        mainWindow.webContents.send("client_show_snack", msg);
     }.bind(this));
 
     ipcMain.on('client_select_proto_file', function (event, file_name) {
@@ -897,6 +925,9 @@ exports.init = function (mainWindow) {
         client_author: "",
         client_project_path: "",
         client_proto_path: "",
+        client_modify_edition_path: "",
+        client_compile_code_path: "",
+        client_generate_eidtion_path: "",
         client_modules: [],
         proto_modules: [],
         proto_files: [],

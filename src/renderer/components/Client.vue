@@ -16,6 +16,10 @@
                         <mu-icon slot="left" value="swap_vert" />
                     </mu-list-item>
 
+                    <mu-list-item title="Version" value="ClientVersion">
+                        <mu-icon slot="left" value="forward" />
+                    </mu-list-item>
+
                     <mu-divider/>
                     <mu-list-item title="Setting" value="ClientSetting">
                         <mu-icon slot="left" value="build" />
@@ -33,130 +37,190 @@
         </div>
 
         <mu-toast v-if="toast" :message="toastContent" @close="hideToast" />
+        <mu-snackbar v-if="snackbar" :message="snackContent" action="关闭" @actionClick="hideSnackbar" @close="hideSnackbar"/>
     </div>
 </template>
 <script>
-const ipcRenderer = require('electron').ipcRenderer;
-const remote = require('electron').remote;
+const ipcRenderer = require("electron").ipcRenderer;
+const remote = require("electron").remote;
 
 export default {
-    data () {
-        return {
-            activeList: 'ClientModule',
-            currentView: "ClientModule",
-            toast: false,
-            toastContent: ""
-        }
+  data() {
+    return {
+      activeList: "ClientModule",
+      currentView: "ClientModule",
+      toast: false,
+      snackbar: false,
+      toastContent: "",
+      snackContent: "",
+      client_author: "",
+      client_project_path: "",
+      client_proto_path: "",
+      client_modify_edition_path: "",
+      client_compile_code_path: "",
+      client_generate_eidtion_path: ""
+    };
+  },
+  methods: {
+    handleListChange(val) {
+      this.activeList = val;
+      this.currentView = val;
     },
-    methods: {
-        handleListChange (val) {
-            this.activeList = val
-            this.currentView = val
-        },
-        showToast (content = "") {
-            this.toastContent = content;
-            this.toast = true;
-            if (this.toastTimer) {
-                clearTimeout(this.toastTimer);
-            }
-            this.toastTimer = setTimeout(() => { this.toast = false }, 2000);
-        },
-        hideToast () {
-            this.toast = false;
-            if (this.toastTimer) clearTimeout(this.toastTimer);
-        }
+    showSnackbar(content = "") {
+      this.snackContent = content;
+      this.snackbar = true;
     },
-    components: {
-        "ClientModule": require('./Client/ClientModule'),
-        "ClientProto": require('./Client/ClientProto'),
-        "ClientSetting": require('./Client/ClientSetting')
+    hideSnackbar() {
+      this.snackbar = false;
     },
-    mounted () {
-        var author = localStorage.getItem("client_author");
-        var project_path = localStorage.getItem("client_project_path");
-        var proto_path = localStorage.getItem("client_proto_path");
-        if (author) {
-            remote.getGlobal('sharedObject').client_author = author;
-        }
-        if (project_path) {
-            remote.getGlobal('sharedObject').client_project_path = project_path;
-        }
-        if (proto_path) {
-            remote.getGlobal('sharedObject').client_proto_path = proto_path;
-        }
-
-        ipcRenderer.on('client_show_message', function (event, msg) {
-            this.showToast(msg);
-        }.bind(this));
-
-        ipcRenderer.on('client_add_log', function (event, msg) {
-            console.log(msg);
-        });
-
-        ipcRenderer.send('client_init');
+    showToast(content = "") {
+      this.toastContent = content;
+      this.toast = true;
+      if (this.toastTimer) {
+        clearTimeout(this.toastTimer);
+      }
+      this.toastTimer = setTimeout(() => {
+        this.toast = false;
+      }, 2000);
+    },
+    hideToast() {
+      this.toast = false;
+      if (this.toastTimer) clearTimeout(this.toastTimer);
     }
-}
+  },
+  components: {
+    ClientModule: require("./Client/ClientModule"),
+    ClientProto: require("./Client/ClientProto"),
+    ClientSetting: require("./Client/ClientSetting"),
+    ClientVersion: require("./Client/ClientVersion")
+  },
+  mounted() {
+    this.client_author = localStorage.getItem("client_author");
+    this.client_project_path = localStorage.getItem("client_project_path");
+    this.client_proto_path = localStorage.getItem("client_proto_path");
+    this.client_modify_edition_path = localStorage.getItem(
+      "client_modify_edition_path"
+    );
+
+    this.client_compile_code_path = localStorage.getItem(
+      "client_compile_code_path"
+    );
+    this.client_generate_eidtion_path = localStorage.getItem(
+      "client_generate_eidtion_path"
+    );
+
+    if (this.client_author) {
+      remote.getGlobal("sharedObject").client_author = this.client_author;
+    }
+    if (this.client_project_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_project_path = this.client_project_path;
+    }
+    if (this.client_proto_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_proto_path = this.client_proto_path;
+    }
+
+    if (this.client_modify_edition_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_modify_edition_path = this.client_modify_edition_path;
+    }
+    if (this.client_compile_code_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_compile_code_path = this.client_compile_code_path;
+    }
+    if (this.client_generate_eidtion_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_generate_eidtion_path = this.client_generate_eidtion_path;
+    }
+
+    ipcRenderer.on(
+      "client_show_message",
+      function(event, msg) {
+        this.showToast(msg);
+      }.bind(this)
+    );
+
+    ipcRenderer.on(
+      "client_show_snack",
+      function(event, msg) {
+        this.showSnackbar(msg);
+      }.bind(this)
+    );
+
+    ipcRenderer.on("client_add_log", function(event, msg) {
+      console.log(msg);
+    });
+
+    ipcRenderer.send("client_init");
+  }
+};
 </script>
 <style scoped>
 .layout {
-    background-color: rgb(236, 236, 236);
+  background-color: rgb(236, 236, 236);
 }
 
 .header {
-    background-color: #7e57c2;
+  background-color: #7e57c2;
 }
 
 .logo {
-    font-size: 24px;
-    color: white;
-    display: inline-block;
-    padding: 10px 20px;
+  font-size: 24px;
+  color: white;
+  display: inline-block;
+  padding: 10px 20px;
 }
 
 .nav {
-    display: inline-block;
-    width: calc(100% - 150px);
-    margin: 0 auto;
+  display: inline-block;
+  width: calc(100% - 150px);
+  margin: 0 auto;
 }
 
 .tab {
-    margin: 0 auto;
-    width: 400px;
-    background-color: rgba(0, 0, 0, 0);
+  margin: 0 auto;
+  width: 400px;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 .content {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .content-left {
-    width: 30%;
-    float: left;
-    background-color: white;
-    margin-bottom: -4000px;
-    padding-bottom: 4000px;
+  width: 30%;
+  float: left;
+  background-color: white;
+  margin-bottom: -4000px;
+  padding-bottom: 4000px;
 }
 
 .content-right {
-    width: 70%;
-    display: inline-block;
-    float: right;
-    padding: 10px 20px;
-    background-color: rgba(0, 0, 0, 0)
+  width: 70%;
+  display: inline-block;
+  float: right;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 .breadcrumb {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 .body {
-    background-color: white;
-    border-radius: 5px;
-    min-height: 860px;
+  background-color: white;
+  border-radius: 5px;
+  min-height: 860px;
 }
 
 .footer {
-    padding: 20px 0;
-    text-align: center;
+  padding: 20px 0;
+  text-align: center;
 }
 </style>

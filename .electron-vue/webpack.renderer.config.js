@@ -151,8 +151,8 @@ if (process.env.NODE_ENV === 'production') {
 
   rendererConfig.plugins.push(
     new BabiliWebpackPlugin({
-      removeConsole: true,
-      removeDebugger: true
+      removeConsole: false,
+      removeDebugger: false
     }),
     new CopyWebpackPlugin([
       {
