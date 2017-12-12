@@ -24,6 +24,10 @@
             <mu-text-field label="设置生成版本bat路径" hintText="生成版本bat路径" v-model="client_generate_eidtion_path" />
             <mu-raised-button label="选择" class="demo-raised-button" primary @click="onGenerateEditionClick" />
         </mu-content-block>
+        <mu-content-block class="demo-raised-button-container">
+            <mu-text-field label="设置remote-assets目录" hintText="remote-assets目录" v-model="client_remote_assets_path" />
+            <mu-raised-button label="选择" class="demo-raised-button" primary @click="onRemoteAssetsClick" />
+        </mu-content-block>
     </div>
 </template>
 
@@ -40,6 +44,7 @@ export default {
             client_modify_edition_path:"",
             client_compile_code_path:"",
             client_generate_eidtion_path:"",
+            client_remote_assets_path:"",
         }
     },
     methods: {
@@ -57,6 +62,9 @@ export default {
         },
         onGenerateEditionClick(){
             ipcRenderer.send('open_client_generate_eidtion_path');
+        },
+        onRemoteAssetsClick(){
+            ipcRenderer.send('open_client_remote_assets_path');
         },
     },
     watch: {
@@ -95,6 +103,12 @@ export default {
                 remote.getGlobal('sharedObject').client_generate_eidtion_path = val;
                 localStorage.setItem("client_generate_eidtion_path", val);
             }
+        },
+        client_remote_assets_path: function (val, oldVal) {
+            if (val != oldVal) {
+                remote.getGlobal('sharedObject').client_remote_assets_path = val;
+                localStorage.setItem("client_remote_assets_path", val);
+            }
         }
     },
     mounted () {
@@ -105,7 +119,7 @@ export default {
         var client_modify_edition_path = localStorage.getItem("client_modify_edition_path");
         var client_compile_code_path = localStorage.getItem("client_compile_code_path");
         var client_generate_eidtion_path = localStorage.getItem("client_generate_eidtion_path");
-
+        var client_remote_assets_path = localStorage.getItem("client_remote_assets_path");
         if (client_author) {
             this.client_author = client_author;
         }
@@ -124,8 +138,11 @@ export default {
         if (client_generate_eidtion_path) {
             this.client_generate_eidtion_path = client_generate_eidtion_path;
         }
+        if(client_remote_assets_path){
+            this.client_remote_assets_path = client_remote_assets_path;
+        }
 
-        ipcRenderer.removeAllListeners(['selected_client_project_path', 'selected_client_proto_path', 'selected_client_modify_edition_path', 'selected_client_compile_code_path', 'selected_client_generate_eidtion_path']);
+        ipcRenderer.removeAllListeners(['selected_client_project_path', 'selected_client_proto_path', 'selected_client_modify_edition_path', 'selected_client_compile_code_path', 'selected_client_generate_eidtion_path','selected_client_remote_assets_path']);
 
         ipcRenderer.on('selected_client_project_path', function (event, path) {
             this.client_project_path = path[0];
@@ -145,6 +162,10 @@ export default {
 
         ipcRenderer.on('selected_client_generate_eidtion_path', function (event, path) {
             this.client_generate_eidtion_path = path[0];
+        }.bind(this));
+
+        ipcRenderer.on('selected_client_remote_assets_path', function (event, path) {
+            this.client_remote_assets_path = path[0];
         }.bind(this));
     }
 }

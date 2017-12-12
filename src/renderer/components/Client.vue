@@ -58,7 +58,8 @@ export default {
       client_proto_path: "",
       client_modify_edition_path: "",
       client_compile_code_path: "",
-      client_generate_eidtion_path: ""
+      client_generate_eidtion_path: "",
+      client_remote_assets_path: ""
     };
   },
   methods: {
@@ -108,6 +109,9 @@ export default {
     this.client_generate_eidtion_path = localStorage.getItem(
       "client_generate_eidtion_path"
     );
+    this.client_remote_assets_path = localStorage.getItem(
+      "client_remote_assets_path"
+    );
 
     if (this.client_author) {
       remote.getGlobal("sharedObject").client_author = this.client_author;
@@ -137,6 +141,11 @@ export default {
       remote.getGlobal(
         "sharedObject"
       ).client_generate_eidtion_path = this.client_generate_eidtion_path;
+    }
+    if (this.client_remote_assets_path) {
+      remote.getGlobal(
+        "sharedObject"
+      ).client_remote_assets_path = this.client_remote_assets_path;
     }
 
     ipcRenderer.on(

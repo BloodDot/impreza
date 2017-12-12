@@ -81,6 +81,14 @@ exports.init = function (mainWindow) {
         })
     })
 
+    ipcMain.on('open_client_remote_assets_path', function (event) {
+        dialog.showOpenDialog({
+            properties: ['openFile', 'openDirectory']
+        }, function (files) {
+            event.sender.send('selected_client_remote_assets_path', files);
+        })
+    })
+
     ipcMain.on('client_init', function (event) {
         if (global.sharedObject.client_modules.length != 0) {
             return;
@@ -130,7 +138,7 @@ exports.init = function (mainWindow) {
     }.bind(this));
 
     ipcMain.on('client_create_proto_javascript', function (event) {
-        createProtoJavascript(event);
+        createProtoJavascriptNew(event);
     }.bind(this));
 
 
@@ -761,6 +769,39 @@ exports.init = function (mainWindow) {
         event.sender.send('client_setting_proto_complete');
     }
 
+    function createProtoJavascriptNew(event) {
+        let jscontent = "var Proto2TypeScript = {};\r\n";
+        let jsonPath = global.sharedObject.client_project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.json";
+        let data = fs.readFileSync(jsonPath, "utf-8");
+        let jsonData = JSON.parse(data);
+
+        for (let i = 0; i < jsonData.enums.length; i++) {
+            const enumEle = jsonData.enums[i];
+            jscontent += "\r\nProto2TypeScript." + enumEle.name + " = {};";
+            for (let m = 0; m < enumEle.values.length; m++) {
+                const enumValue = enumEle.values[m];
+                jscontent += "\r\nProto2TypeScript." + enumEle.name + "['" + enumValue.name + "'] = " + enumValue.id + ";\r\nProto2TypeScript." + enumEle.name + "[" + enumValue.id + "] = '" + enumValue.name + "';"
+            }
+        }
+
+        for (let i = 0; i < jsonData.messages.length; i++) {
+            const msgEle = jsonData.messages[i];
+            jscontent += "\r\nProto2TypeScript." + msgEle.name + " = {};";
+            for (let m = 0; m < msgEle.fields.length; m++) {
+                const fieldEle = msgEle.fields[m];
+                jscontent += "\r\nProto2TypeScript." + msgEle.name + "." + fieldEle.name + ";";
+            }
+        }
+
+        let jspath = global.sharedObject.client_project_path + "/assets/script/lib/Proto2TypeScript/Proto2TypeScript.js";
+        fs.writeFile(jspath, jscontent, function (err) {
+            if (!err) {
+                let msg = "生成Proto2TypeScript.js成功";
+                mainWindow.webContents.send("client_show_message", msg);
+            }
+        });
+    }
+
     function createProtoJavascript(event) {
         let jscontent = "var Proto2TypeScript = {};\r\n";
         let tscontent = "\r\ndeclare module Proto2TypeScript {\r\n\texport interface ProtoBufModel {}";
@@ -878,19 +919,9 @@ exports.init = function (mainWindow) {
         fs.writeFile(jspath, jscontent, function (err) {
             if (!err) {
                 let msg = "生成Proto2TypeScript.js成功";
-                mainWindow.webContents.send("client_add_log", msg);
+                mainWindow.webContents.send("client_show_message", msg);
             }
         });
-
-        // fs.writeFile(tspath, tscontent, function (err) {
-        //     if (!err) {
-        //         let msg = "生成Proto2TypeScript.d.ts成功";
-        //         mainWindow.webContents.send("client_add_log", msg);
-        //     }
-        // });
-
-        let msg = "生成javascript文件完毕";
-        mainWindow.webContents.send("client_show_message", msg);
     }
 
     function analysisEnum(content) {
@@ -928,6 +959,7 @@ exports.init = function (mainWindow) {
         client_modify_edition_path: "",
         client_compile_code_path: "",
         client_generate_eidtion_path: "",
+        client_remote_assets_path: "",
         client_modules: [],
         proto_modules: [],
         proto_files: [],
