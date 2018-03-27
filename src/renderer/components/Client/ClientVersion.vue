@@ -187,7 +187,12 @@ export default {
           path: this.client_remote_server_operate_path
         },
         function(err) {
-          console.log(err);
+          if (err) {
+            console.log(err);
+          } else {
+            console.log("传输zip成功");
+            ipcRenderer.send("client_show_message", "传输zip成功");
+          }
         }
       );
     },
@@ -225,7 +230,12 @@ export default {
         .on("ready", function() {
           console.log("Client :: ready");
           let cmdStr =
-            "unzip -o " + self.client_remote_server_operate_path + fileName;
+            "cd " +
+            self.client_remote_server_operate_path +
+            "\n" +
+            "unzip -o " +
+            fileName +
+            ".zip";
 
           console.log("cmd---" + cmdStr);
 

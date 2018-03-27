@@ -67,6 +67,8 @@ var exec = require("child_process").exec;
 const ipcRenderer = require("electron").ipcRenderer;
 const remote = require("electron").remote;
 const fs = require("fs");
+const removeSpaces = require("strman").removeSpaces;
+const replace = require("strman").replace;
 
 export default {
   data() {
@@ -134,33 +136,40 @@ export default {
     composeProto() {
       var pa = fs.readdirSync(this.proto_path);
       var content = 'syntax = "proto3";\r\n';
-      pa.forEach(
-        function(ele, index) {
-          var info = fs.statSync(this.proto_path + "/" + ele);
-          if (info.isDirectory()) {
-            readDirSync(this.proto_path + "/" + ele);
-          } else {
-            var t = ele.split(".")[1];
-            if (t == "proto") {
-              var eleContent = fs.readFileSync(
-                this.proto_path + "/" + ele,
-                "utf-8"
-              );
-              eleContent = eleContent.replace('syntax = "proto3";', "");
-              eleContent = eleContent.replace(
-                'import "PBMSGCOMMON.proto";',
-                ""
-              );
-              eleContent = eleContent.replace(
-                'option java_package = "com.qp.game.proto";',
-                ""
-              );
-              content += "// ----- from " + ele + " ---- \n";
-              content += eleContent + "\n";
-            }
-          }
-        }.bind(this)
+
+      var eleContent = fs.readFileSync(
+        this.proto_path + "/" + "a_proto_list.md",
+        "utf-8"
       );
+      let protos = eleContent.split("import");
+      for (let i = 0; i < protos.length; i++) {
+        const element = protos[i];
+        let str = removeSpaces(element);
+
+        let reg = new RegExp(/(;)|(\")|(\/\/.*)|(\/\*[\s\S]*?\*\/)/g);
+        str = str.replace(reg, "");
+        if (str != "") {
+          console.log(this.proto_path + "/" + str);
+
+          var eleContent = fs.readFileSync(
+            this.proto_path + "/" + str,
+            "utf-8"
+          );
+          eleContent = eleContent.replace('syntax = "proto3";', "");
+          eleContent = eleContent.replace('import "PBMSGCOMMON.proto";', "");
+          eleContent = eleContent.replace(
+            'import "../chatsrc/PBMSGCHAT.proto";',
+            ""
+          );
+
+          eleContent = eleContent.replace(
+            'option java_package = "com.qp.game.proto";',
+            ""
+          );
+          content += "// ----- from " + str + " ---- \n";
+          content += eleContent + "\n";
+        }
+      }
 
       var ppath = this.project_path + "/assets/resources/proto/game.proto";
       fs.writeFile(ppath, content, function(err) {
